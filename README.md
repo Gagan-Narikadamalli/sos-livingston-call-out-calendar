@@ -16,3 +16,4 @@ Import this folder into Vercel, connect a Postgres database, and add `DATABASE_U
 
 Public form: `/`  
 Manager calendar: `/manager`
+- Employee-submitted requests and manager-created Employee Notes share one green calendar category.
