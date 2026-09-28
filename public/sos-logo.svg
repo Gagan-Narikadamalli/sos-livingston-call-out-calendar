@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 82" role="img" aria-labelledby="title">
+  <title id="title">Success On The Spectrum</title>
+  <rect width="180" height="82" rx="12" fill="#fff"/>
+  <g transform="translate(8 8)">
+    <path d="M4 52c15 8 33 8 48 0 15-8 33-8 48 0v11H4z" fill="#45b8cf"/>
+    <path d="M49 7v43H20z" fill="#172f5f"/>
+    <path d="M54 13v36h29z" fill="#45b8cf"/>
+    <path d="M17 51h70c-5 10-16 15-35 15S22 61 17 51z" fill="#172f5f"/>
+  </g>
+  <text x="111" y="34" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="800" fill="#172f5f">SOS</text>
+  <text x="111" y="51" text-anchor="middle" font-family="Arial, sans-serif" font-size="8.2" font-weight="700" letter-spacing=".35" fill="#172f5f">SUCCESS ON THE</text>
+  <text x="111" y="62" text-anchor="middle" font-family="Arial, sans-serif" font-size="8.2" font-weight="700" letter-spacing=".35" fill="#45b8cf">SPECTRUM</text>
+</svg>

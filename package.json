@@ -1,0 +1,1 @@
+{"name":"sos-livingston-call-out-calendar","private":true,"scripts":{"dev":"next dev","build":"next build","start":"next start"},"dependencies":{"next":"latest","postgres":"latest","react":"latest","react-dom":"latest"}}

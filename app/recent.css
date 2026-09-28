@@ -1,0 +1,5 @@
+.legend i.parent-note{background:#4f7ed3}
+.event.note.parent-note{color:#164488;background:#e0eaff;border-color:#4f7ed3}
+.legend i.recent{background:#dc3038}
+.event.recent,.event.employee.recent,.event.parent.recent,.event.note.recent{color:#fff;background:#dc3038;border-color:#9f1520}
+.event.recent:hover{background:#c4242d}

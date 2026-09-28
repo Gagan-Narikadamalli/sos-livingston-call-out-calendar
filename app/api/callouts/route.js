@@ -1,0 +1,4 @@
+import {NextResponse} from'next/server';
+import {db}from'../../../lib/db';
+import {validatePublicSubmission}from'../../../lib/validate';
+export async function POST(req){try{const value=validatePublicSubmission(await req.json());if(typeof value==='string')return NextResponse.json({error:value},{status:400});const sql=await db(),groupId=crypto.randomUUID();await sql.begin(async transaction=>{for(const eventDate of value.dates)await transaction`insert into call_outs(submitter_type,name,email,request_type,event_date,reason,request_group_id) values(${value.submitter_type},${value.name},${value.email},${value.request_type},${eventDate},${value.reason||''},${groupId})`});return NextResponse.json({ok:true,created:value.dates.length})}catch(error){console.error(error);return NextResponse.json({error:'Unable to save the request.'},{status:500})}}
