@@ -23,7 +23,7 @@ export default function Home() {
 
   const minimumPtoDate = getMinimumPtoDate();
   const reasonRequired = form.request_type === 'Non-PTO / Out';
-  const dateMinimum = form.request_type === 'PTO' ? minimumPtoDate : undefined;
+  const dateMinimum = form.request_type === 'PTO' || form.request_type === '1/2 Day PTO' ? minimumPtoDate : undefined;
 
   function updateForm(changes) {
     setForm((current) => ({ ...current, ...changes }));
@@ -126,10 +126,11 @@ export default function Home() {
               onChange={(event) => updateForm({ request_type: event.target.value })}
             >
               <option value="PTO">PTO (if available)</option>
+              <option value="1/2 Day PTO">Non-PTO / Out</option>
               <option value="Non-PTO / Out">Non-PTO / Out</option>
             </select>
             <small className="muted">
-              PTO dates must be at least two calendar days after today.
+              PTO and 1/2 PTO dates must be at least two calendar days after today.
             </small>
           </Field>
 
