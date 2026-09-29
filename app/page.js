@@ -126,7 +126,7 @@ export default function Home() {
               onChange={(event) => updateForm({ request_type: event.target.value })}
             >
               <option value="PTO">PTO (if available)</option>
-              <option value="1/2 Day PTO">Non-PTO / Out</option>
+              <option value="1/2 Day PTO">1/2 Day PTO</option>
               <option value="Non-PTO / Out">Non-PTO / Out</option>
             </select>
             <small className="muted">
