@@ -290,7 +290,7 @@ export default function Manager(){
 })
 }
       >{
-        MANAGER_TYPES.map(x=><option key={x
+        [...new Set([...MANAGER_TYPES,modal.request_type].filter(Boolean))].map(x=><option key={x
 }>{x
 }</option>)
 }
