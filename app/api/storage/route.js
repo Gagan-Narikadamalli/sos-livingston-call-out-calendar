@@ -1,2 +1,5 @@
+import {withApiErrors} from '../../../lib/api';
 import{NextResponse}from'next/server';import{authorized}from'../../../lib/auth';import{db}from'../../../lib/db';
-export async function GET(req){if(!authorized(req))return NextResponse.json({error:'Unauthorized'},{status:401});const sql=await db();const[s]=await sql`select pg_database_size(current_database())::bigint as used`;const[c]=await sql`select (select count(*) from call_outs)+(select count(*) from calendar_notes) as records`;const cap=512*1024*1024,used=Number(s.used);return NextResponse.json({used,remaining:Math.max(0,cap-used),capacity:cap,records:Number(c.records)})}
+async function handleGET(req){if(!authorized(req))return NextResponse.json({error:'Unauthorized'},{status:401});const sql=await db();const[s]=await sql`select pg_database_size(current_database())::bigint as used`;const[c]=await sql`select (select count(*) from call_outs)+(select count(*) from calendar_notes) as records`;const cap=512*1024*1024,used=Number(s.used);return NextResponse.json({used,remaining:Math.max(0,cap-used),capacity:cap,records:Number(c.records)})}
+
+export const GET=withApiErrors(handleGET);

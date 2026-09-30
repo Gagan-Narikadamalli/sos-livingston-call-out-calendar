@@ -1,6 +1,7 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import Brand from '../components/Brand';
+import {apiRequest} from '../../lib/client-api';
 
 const pad=n=>String(n).padStart(2,'0');
 const monthKey=date=>`${date.getFullYear()}-${pad(date.getMonth()+1)}`;
@@ -14,25 +15,25 @@ export default function TeamCalendar(){
   const [notes,setNotes]=useState([]);
   const [message,setMessage]=useState('');
   const [,setClock]=useState(Date.now());
+  const loadId=useRef(0);
 
-  useEffect(()=>{fetch('/api/intern-login').then(r=>r.json()).then(data=>setAuthenticated(data.authenticated)).catch(()=>setAuthenticated(false))},[]);
+  useEffect(()=>{apiRequest('/api/intern-login').then(data=>setAuthenticated(data.authenticated)).catch(error=>{setAuthenticated(false);setMessage(error.message)})},[]);
   useEffect(()=>{if(authenticated)load()},[authenticated,month]);
   useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),60000);return()=>clearInterval(timer)},[]);
 
   async function load(){
-    setMessage('');
-    const response=await fetch('/api/calendar?month='+monthKey(month));
-    if(response.status===401)return setAuthenticated(false);
-    const data=await response.json();
-    if(!response.ok)return setMessage(data.error||'Unable to load the calendar.');
-    setEntries(data.entries);setNotes(data.notes);
+    const current=++loadId.current;setMessage('');
+    try{
+      const data=await apiRequest('/api/calendar?month='+monthKey(month));
+      if(current!==loadId.current)return;
+      setEntries(data.entries);setNotes(data.notes);
+    }catch(error){if(current!==loadId.current)return;if(error.status===401)setAuthenticated(false);setMessage(error.message)}
   }
   async function login(event){
     event.preventDefault();setMessage('');
-    const response=await fetch('/api/intern-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password})});
-    if(response.ok){setAuthenticated(true);setPassword('')}else setMessage('Incorrect password. Please try again.');
+    try{await apiRequest('/api/intern-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password})});setAuthenticated(true);setPassword('')}catch(error){setMessage(error.message)}
   }
-  async function logout(){await fetch('/api/intern-login',{method:'DELETE'});setAuthenticated(false)}
+  async function logout(){try{await apiRequest('/api/intern-login',{method:'DELETE'});loadId.current++;setAuthenticated(false)}catch(error){setMessage(error.message)}}
 
   if(authenticated===null)return <Shell><main className="manager-login"><section className="card login-card"><h1>Livingston call-out calendar</h1><p>Checking calendar access…</p></section></main></Shell>;
   if(!authenticated)return <Shell><main className="manager-login"><form className="card login-card" onSubmit={login}><span className="login-label">AUTHORIZED TEAM ACCESS</span><h1>View the Livingston call-out calendar</h1><p>Enter the calendar password to view Livingston call-outs, time-off requests, and manager notes.</p><label className="field"><b>Calendar password</b><input type="password" required autoFocus value={password} onChange={e=>setPassword(e.target.value)} placeholder="Enter calendar password"/></label>{message&&<p className="message error-message">{message}</p>}<button>Open Livingston calendar</button><p className="viewer-login-note">This calendar is read-only. Only managers can add, edit, or delete records.</p><a className="back-link" href="/">← Return to submission form</a></form></main></Shell>;

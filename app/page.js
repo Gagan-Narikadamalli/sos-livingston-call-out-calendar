@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Brand from './components/Brand';
+import { apiRequest } from '../lib/client-api';
+import { earliestAdvanceDate } from '../lib/validate';
 
 const EMPTY_FORM = {
   submitter_type: 'Employee',
@@ -58,22 +60,20 @@ export default function Home() {
     setBusy(true);
     setMessage('');
 
-    const response = await fetch('/api/callouts', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    const data = await response.json();
-
-    setBusy(false);
-    if (!response.ok) {
-      setMessage(data.error);
-      return;
+    try {
+      const data = await apiRequest('/api/callouts', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const suffix = data.created === 1 ? '' : 's';
+      setMessage(`${data.created} PTO or leave date${suffix} submitted successfully.`);
+      setForm(EMPTY_FORM);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
     }
-
-    const suffix = data.created === 1 ? '' : 's';
-    setMessage(`${data.created} PTO or leave date${suffix} submitted successfully.`);
-    setForm(EMPTY_FORM);
   }
 
   return (
@@ -82,7 +82,7 @@ export default function Home() {
         <Brand subtitle="Livingston PTO & Leave Request Portal" />
         <nav className="portal-links">
           <a className="link" href="/calendar">Livingston call-out calendar</a>
-          <a className="link" href="/manager">Manager calendar</a>
+          <a className="link" href="/manager">Livingston Manager Calendar</a>
         </nav>
       </header>
 
@@ -130,7 +130,7 @@ export default function Home() {
               <option value="Non-PTO / Out">Non-PTO / Out</option>
             </select>
             <small className="muted">
-              PTO and 1/2 PTO dates must be at least two calendar days after today.
+              PTO and 1/2 Day PTO dates must be at least two calendar days after today.
             </small>
           </Field>
 
@@ -245,14 +245,7 @@ export default function Home() {
 }
 
 function getMinimumPtoDate() {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() + 2);
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return earliestAdvanceDate();
 }
 
 function Field({ label, children }) {
