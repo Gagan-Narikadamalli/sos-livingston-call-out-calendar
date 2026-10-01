@@ -2,7 +2,7 @@ import {withApiErrors} from '../../../lib/api';
 import {NextResponse} from 'next/server';
 import {authorized} from '../../../lib/auth';
 import {db} from '../../../lib/db';
-import {ensureRecurrenceExceptions} from '../../../lib/note-recurrence';
+import {ensureRecurrenceExceptions,stopOngoingRecurrenceIfCurrentMonthEmpty} from '../../../lib/note-recurrence';
 import {validateEntry,validDate,validMonth} from '../../../lib/validate';
 
 const no=()=>NextResponse.json({error:'Unauthorized'},{status:401});
@@ -95,6 +95,14 @@ async function handleDELETE(req){
 
   await ensureRecurrenceExceptions(sql);
   const result=await sql.begin(async transaction=>{
+    const recurrenceRows=await transaction`
+      select distinct recurrence_id
+      from calendar_notes
+      where recurrence_id is not null
+        and event_date>=${start}
+        and event_date<=${end}
+    `;
+
     await transaction`
       insert into note_recurrence_exceptions(recurrence_id,event_date)
       select recurrence_id,event_date
@@ -116,12 +124,23 @@ async function handleDELETE(req){
       returning id
     `;
 
-    return {callOuts:callOuts.length,managerNotes:notes.length};
+    return {
+      callOuts:callOuts.length,
+      managerNotes:notes.length,
+      recurrenceIds:recurrenceRows.map(row=>row.recurrence_id),
+    };
   });
 
+  let autoStoppedSeries=0;
+  for(const recurrenceId of result.recurrenceIds){
+    if(await stopOngoingRecurrenceIfCurrentMonthEmpty(sql,recurrenceId))autoStoppedSeries+=1;
+  }
+
   return NextResponse.json({
-    ...result,
+    callOuts:result.callOuts,
+    managerNotes:result.managerNotes,
     deleted:result.callOuts+result.managerNotes,
+    autoStoppedSeries,
     start,
     end,
   });
