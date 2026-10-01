@@ -6,6 +6,7 @@ const OPTIONS = [
   {value: 'manager', label: 'Manager Note'},
   {value: 'employee', label: 'Employee Note'},
   {value: 'client', label: 'Client Note'},
+  {value: 'pto', label: 'PTO / 1/2 Day PTO'},
   {value: 'new', label: 'New Note'},
 ];
 
