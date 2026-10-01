@@ -30,6 +30,16 @@ function ordinaryDates(body){
   return dates;
 }
 
+function rangeContainsWeekday(start,end,weekdays){
+  const cursor=new Date(start+'T00:00:00Z');
+  const last=new Date(end+'T00:00:00Z');
+  for(let checked=0;checked<7&&cursor<=last;checked+=1){
+    if(weekdays.includes(cursor.getUTCDay()))return true;
+    cursor.setUTCDate(cursor.getUTCDate()+1);
+  }
+  return false;
+}
+
 function recurrenceInput(body){
   const start=clean(body.recurrence_start,10);
   const kind=clean(body.recurrence_kind,20);
@@ -41,6 +51,9 @@ function recurrenceInput(body){
   if(kind!=='range'&&kind!=='ongoing')return'Choose a recurring duration.';
   if(kind==='range'&&(!validDate(end)||end<start))return'Choose a valid recurring end date.';
   if(!weekdays.length)return'Choose at least one weekday for the recurring note.';
+  if(kind==='range'&&!rangeContainsWeekday(start,end,weekdays)){
+    return'Choose at least one weekday that occurs within the recurring date range.';
+  }
 
   return {start,end:end||null,weekdays,ongoing:kind==='ongoing'};
 }
