@@ -45,6 +45,25 @@ function recurrenceInput(body){
   return {start,end:end||null,weekdays,ongoing:kind==='ongoing'};
 }
 
+async function recurrenceMonthNotes(sql,recurrenceId,month){
+  return sql`
+    select
+      n.id,n.event_date::text,n.title,n.note_type,n.note_category,n.details,
+      n.created_at,n.updated_at,n.recurrence_id,
+      r.ongoing as recurrence_ongoing,
+      r.active as recurrence_active,
+      r.weekdays as recurrence_weekdays,
+      r.start_date::text as recurrence_start,
+      r.end_date::text as recurrence_end
+    from calendar_notes n
+    join note_recurrences r on r.id=n.recurrence_id
+    where n.recurrence_id=${recurrenceId}
+      and n.event_date>=(${month+'-01'})::date
+      and n.event_date<((${month+'-01'})::date+interval '1 month')
+    order by n.event_date,n.created_at
+  `;
+}
+
 async function handleGET(req){
   if(!authorized(req))return no();
   const sql=await db(),month=new URL(req.url).searchParams.get('month');
@@ -96,8 +115,11 @@ async function handlePOST(req){
       returning id
     `;
 
-    const notes=await materializeRecurringNotesForMonth(sql,recurrence.start.slice(0,7));
-    return NextResponse.json({ok:true,created:notes.length,recurrence_id:rows[0].id,notes});
+    const recurrenceId=rows[0].id;
+    const month=recurrence.start.slice(0,7);
+    await materializeRecurringNotesForMonth(sql,month);
+    const notes=await recurrenceMonthNotes(sql,recurrenceId,month);
+    return NextResponse.json({ok:true,created:notes.length,recurrence_id:recurrenceId,notes});
   }
 
   const dates=ordinaryDates(b);
@@ -123,15 +145,24 @@ async function handlePATCH(req){
   if(!authorized(req))return no();
   const b=await req.json(),sql=await db();
 
-  if(b.action==='stop_recurrence'&&b.recurrence_id){
-    const r=await sql`
+  if(b.action==='stop_recurrence'){
+    const recurrenceId=Number(b.recurrence_id);
+    if(!Number.isInteger(recurrenceId)||recurrenceId<1){
+      return NextResponse.json({error:'Invalid recurring note.'},{status:400});
+    }
+    const rows=await sql`
       update note_recurrences
       set active=false,stopped_at=now(),updated_at=now()
-      where id=${b.recurrence_id} and ongoing=true
+      where id=${recurrenceId} and ongoing=true
       returning id
     `;
-    return r.length?NextResponse.json({ok:true}):NextResponse.json({error:'Ongoing recurrence not found.'},{status:404});
+    return rows.length
+      ?NextResponse.json({ok:true})
+      :NextResponse.json({error:'Ongoing recurrence not found.'},{status:404});
   }
+
+  const noteId=Number(b.id);
+  if(!Number.isInteger(noteId)||noteId<1)return NextResponse.json({error:'Invalid note.'},{status:400});
 
   const event_date=clean(b.event_date,10);
   const title=clean(b.title,120);
@@ -142,26 +173,73 @@ async function handlePATCH(req){
   if(!validDate(event_date)||!title||!note_type)return NextResponse.json({error:'Complete the required fields.'},{status:400});
   if(!categories.includes(note_category))return NextResponse.json({error:'Choose Manager Note, Parent/Client Note, or Employee Note.'},{status:400});
 
-  const r=await sql`
+  const existing=await sql`
+    select id,recurrence_id,event_date::text
+    from calendar_notes
+    where id=${noteId}
+  `;
+  if(!existing.length)return NextResponse.json({error:'Note not found'},{status:404});
+
+  const current=existing[0];
+  const dateChanged=current.event_date!==event_date;
+
+  if(current.recurrence_id&&dateChanged){
+    await ensureRecurrenceExceptions(sql);
+    const collision=await sql`
+      select id
+      from calendar_notes
+      where recurrence_id=${current.recurrence_id}
+        and event_date=${event_date}
+        and id<>${noteId}
+      limit 1
+    `;
+    if(collision.length){
+      return NextResponse.json({error:'This recurring series already has an occurrence on that date.'},{status:409});
+    }
+
+    const updated=await sql.begin(async transaction=>{
+      await transaction`
+        insert into note_recurrence_exceptions(recurrence_id,event_date)
+        values(${current.recurrence_id},${current.event_date})
+        on conflict(recurrence_id,event_date) do nothing
+      `;
+      await transaction`
+        delete from note_recurrence_exceptions
+        where recurrence_id=${current.recurrence_id}
+          and event_date=${event_date}
+      `;
+      return transaction`
+        update calendar_notes
+        set event_date=${event_date},title=${title},note_type=${note_type},
+            note_category=${note_category},details=${details||''},updated_at=now()
+        where id=${noteId}
+        returning id
+      `;
+    });
+    return NextResponse.json({ok:true,updated:updated.length});
+  }
+
+  const updated=await sql`
     update calendar_notes
     set event_date=${event_date},title=${title},note_type=${note_type},
         note_category=${note_category},details=${details||''},updated_at=now()
-    where id=${b.id}
+    where id=${noteId}
     returning id
   `;
-  return r.length?NextResponse.json({ok:true}):NextResponse.json({error:'Note not found'},{status:404});
+  return NextResponse.json({ok:true,updated:updated.length});
 }
 
 async function handleDELETE(req){
   if(!authorized(req))return no();
   const sql=await db();
-  const id=new URL(req.url).searchParams.get('id');
+  const noteId=Number(new URL(req.url).searchParams.get('id'));
+  if(!Number.isInteger(noteId)||noteId<1)return NextResponse.json({error:'Invalid note.'},{status:400});
+
   const rows=await sql`
     select id,recurrence_id,event_date::text
     from calendar_notes
-    where id=${id}
+    where id=${noteId}
   `;
-
   if(!rows.length)return NextResponse.json({deleted:0});
 
   const note=rows[0];
@@ -173,12 +251,12 @@ async function handleDELETE(req){
         values(${note.recurrence_id},${note.event_date})
         on conflict(recurrence_id,event_date) do nothing
       `;
-      return transaction`delete from calendar_notes where id=${id} returning id`;
+      return transaction`delete from calendar_notes where id=${noteId} returning id`;
     });
     return NextResponse.json({deleted:deleted.length,recurringOccurrence:true});
   }
 
-  const deleted=await sql`delete from calendar_notes where id=${id} returning id`;
+  const deleted=await sql`delete from calendar_notes where id=${noteId} returning id`;
   return NextResponse.json({deleted:deleted.length,recurringOccurrence:false});
 }
 
