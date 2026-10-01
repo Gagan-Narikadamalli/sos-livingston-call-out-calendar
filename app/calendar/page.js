@@ -15,6 +15,11 @@ const isNew=timestamp=>{
   return Number.isFinite(time)&&age>=0&&age<24*60*60*1000;
 };
 
+const isPtoReason=value=>{
+  const normalized=String(value||'').trim().toLowerCase().replace(/\s+/g,'');
+  return normalized==='pto'||normalized==='1/2daypto';
+};
+
 const noteCategory=note=>note.note_category==='Parent Note'
   ?'Parent/Client Note'
   :(note.note_category||'Manager Note');
@@ -22,6 +27,7 @@ const noteCategory=note=>note.note_category==='Parent Note'
 function entryMatchesFilter(entry,filter){
   if(!filter)return true;
   if(filter==='employee')return true;
+  if(filter==='pto')return isPtoReason(entry.request_type);
   if(filter==='new')return isNew(entry.submitted_at);
   return false;
 }
@@ -29,6 +35,7 @@ function entryMatchesFilter(entry,filter){
 function noteMatchesFilter(note,filter){
   if(!filter)return true;
   if(filter==='new')return isNew(note.created_at);
+  if(filter==='pto')return isPtoReason(note.note_type);
   const category=noteCategory(note);
   if(filter==='manager')return category==='Manager Note';
   if(filter==='employee')return category==='Employee Note';
