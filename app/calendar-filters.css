@@ -1,0 +1,136 @@
+.calendar-controls {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin:15px 0 25px;
+}
+.calendar-controls .legend {
+  margin:0;
+}
+.calendar-filter {
+  position:relative;
+  flex:none;
+}
+.filter-trigger {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  background:#fff;
+  color:var(--deep);
+  border:1px solid var(--line);
+  box-shadow:0 4px 14px #17305e12;
+}
+.filter-trigger:hover,.filter-trigger.active {
+  background:#eef8fb;
+  color:var(--deep);
+}
+.filter-trigger.active {
+  border-color:var(--teal);
+  box-shadow:0 0 0 2px #178fa820;
+}
+.filter-trigger svg {
+  width:18px;
+  height:18px;
+  fill:currentColor;
+}
+.filter-popover {
+  position:absolute;
+  z-index:30;
+  right:0;
+  top:calc(100% + 8px);
+  width:230px;
+  display:grid;
+  gap:6px;
+  padding:12px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:0 14px 34px #17305e25;
+}
+.filter-popover-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:2px 4px 8px;
+}
+.filter-clear {
+  padding:4px 6px;
+  background:transparent;
+  color:var(--teal);
+  font-size:13px;
+  text-decoration:underline;
+}
+.filter-option {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  padding:10px 11px;
+  background:#fff;
+  color:var(--deep);
+  border:1px solid transparent;
+  text-align:left;
+  font-size:14px;
+}
+.filter-option:hover,.filter-option.selected {
+  background:#eef8fb;
+  color:var(--deep);
+}
+.filter-option.selected {
+  border-color:#9ed4df;
+}
+.filter-popover small {
+  color:#61798a;
+  line-height:1.35;
+  padding:6px 4px 2px;
+}
+.weekday-picker {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.weekday-option {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 10px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:#fff;
+  cursor:pointer;
+  font-size:15px;
+}
+.weekday-option:has(input:checked) {
+  border-color:var(--teal);
+  background:#eef8fb;
+}
+.weekday-option input {
+  width:17px;
+  height:17px;
+  min-width:17px;
+  margin:0;
+  padding:0;
+}
+@media(max-width:800px) {
+  .calendar-controls {
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .calendar-filter {
+    width:100%;
+  }
+  .filter-trigger {
+    width:100%;
+    justify-content:center;
+  }
+  .filter-popover {
+    left:0;
+    right:auto;
+    width:min(100%,300px);
+  }
+  .weekday-picker {
+    grid-template-columns:1fr;
+  }
+}
