@@ -2,7 +2,7 @@ import {withApiErrors} from '../../../lib/api';
 import {NextResponse} from 'next/server';
 import {authorized} from '../../../lib/auth';
 import {db} from '../../../lib/db';
-import {materializeRecurringNotesForMonth} from '../../../lib/note-recurrence';
+import {ensureRecurrenceExceptions,materializeRecurringNotesForMonth} from '../../../lib/note-recurrence';
 import {clean,validDate,validMonth} from '../../../lib/validate';
 
 const no=()=>NextResponse.json({error:'Unauthorized'},{status:401});
@@ -156,8 +156,30 @@ async function handleDELETE(req){
   if(!authorized(req))return no();
   const sql=await db();
   const id=new URL(req.url).searchParams.get('id');
-  const r=await sql`delete from calendar_notes where id=${id} returning id`;
-  return NextResponse.json({deleted:r.length});
+  const rows=await sql`
+    select id,recurrence_id,event_date::text
+    from calendar_notes
+    where id=${id}
+  `;
+
+  if(!rows.length)return NextResponse.json({deleted:0});
+
+  const note=rows[0];
+  if(note.recurrence_id){
+    await ensureRecurrenceExceptions(sql);
+    const deleted=await sql.begin(async transaction=>{
+      await transaction`
+        insert into note_recurrence_exceptions(recurrence_id,event_date)
+        values(${note.recurrence_id},${note.event_date})
+        on conflict(recurrence_id,event_date) do nothing
+      `;
+      return transaction`delete from calendar_notes where id=${id} returning id`;
+    });
+    return NextResponse.json({deleted:deleted.length,recurringOccurrence:true});
+  }
+
+  const deleted=await sql`delete from calendar_notes where id=${id} returning id`;
+  return NextResponse.json({deleted:deleted.length,recurringOccurrence:false});
 }
 
 export const GET=withApiErrors(handleGET);
