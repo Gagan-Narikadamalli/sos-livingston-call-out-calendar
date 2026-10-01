@@ -231,7 +231,7 @@ export default function Manager(){
         <div className="calendar">{
     cells.map((d,i)=>{const date=d?`${key(month)}-${pad(d)}`:'';return <div className="day" key={i
 }>{d&&<><div className="daytop"><b>{d
-}</b><button className="plus" title="Add calendar note" onClick={()=>setModal({kind:'note',event_date:date,title:'',note_type:'Out',note_category:'Manager Note',details:'',note_date_mode:'single',repeat_dates:[date,''],range_start:date,range_end:date
+}</b><button className="plus" title="Add calendar note" onClick={()=>setModal({kind:'note',event_date:date,title:'',note_type:'Out',note_category:'Manager Note',details:'',note_date_mode:'single',repeat_dates:[date,''],range_start:date,range_end:date,recurrence_kind:'range',recurrence_start:date,recurrence_end:date,recurrence_weekdays:[new Date(date+'T00:00:00Z').getUTCDay()]
 })
 }>+ Note</button></div>{entries.filter(x=>x.event_date===date&&x.submitter_type==='Employee').map(x=><button className={`event ${x.submitter_type.toLowerCase()}${isNew(x.submitted_at)?' recent':''}`
 } key={'e'+x.id
@@ -349,7 +349,7 @@ export default function Manager(){
           e=>setModal({...modal,note_date_mode:e.target.value
 })
 }
-        ><option value="single">Single date</option><option value="multiple">Multiple selected dates</option><option value="range">Date range</option></select></Field>
+        ><option value="single">Single date</option><option value="multiple">Multiple selected dates</option><option value="range">Date range</option><option value="recurring">Recurring</option></select></Field>
 }
       {
         modal.id||modal.note_date_mode==='single'?<Field t="Date"><input required type="date" value={
@@ -359,7 +359,7 @@ export default function Manager(){
           e=>setModal({...modal,event_date:e.target.value
 })
 }
-        /></Field>:modal.note_date_mode==='multiple'?<div className="date-section"><b>Note dates</b>{
+        /></Field>:modal.note_date_mode==='recurring'?<RecurringFields modal={modal} setModal={setModal}/>:modal.note_date_mode==='multiple'?<div className="date-section"><b>Note dates</b>{
           modal.repeat_dates.map((date,index)=><div className="date-row" key={index
 }><input required type="date" value={date
 } onChange={e=>updateRepeatDate(index,e.target.value)
@@ -397,7 +397,7 @@ export default function Manager(){
 }
       </p>
 }
-    <div className="actions"><button>Save</button>{
+    <div className="actions"><button>Save</button>{modal.recurrence_id&&modal.recurrence_ongoing&&modal.recurrence_active&&<button type="button" className="danger" onClick={async()=>{if(!confirm('Stop this ongoing recurring note? Existing occurrences will remain, but it will not continue into future months.'))return;try{await apiRequest('/api/notes',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({action:'stop_recurrence',recurrence_id:modal.recurrence_id})});setModal(null);setMsg('Recurring note stopped.');load()}catch(error){setMsg(error.message)}}}>Stop ongoing</button>}{
       modal.id&&<button type="button" className="danger" onClick={
         ()=>remove(modal.kind==='note'?'notes':'manager',modal.id)
 }
@@ -409,6 +409,21 @@ export default function Manager(){
     >Cancel</button></div></form></div>
 }
     </Shell>;
+}
+function RecurringFields({modal,setModal}){
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const selected=modal.recurrence_weekdays||[];
+  const toggle=day=>setModal({...modal,recurrence_weekdays:selected.includes(day)?selected.filter(x=>x!==day):[...selected,day].sort()});
+  return <div className="date-section"><b>Recurring schedule</b>
+    <Field t="Repeat"><select value={modal.recurrence_kind||'range'} onChange={e=>setModal({...modal,recurrence_kind:e.target.value})}>
+      <option value="range">From this date to this date</option>
+      <option value="ongoing">From this date — ongoing until stopped</option>
+    </select></Field>
+    <Field t="Start date"><input required type="date" value={modal.recurrence_start||modal.event_date} onChange={e=>setModal({...modal,recurrence_start:e.target.value})}/></Field>
+    {modal.recurrence_kind!=='ongoing'&&<Field t="End date"><input required type="date" min={modal.recurrence_start} value={modal.recurrence_end||modal.recurrence_start} onChange={e=>setModal({...modal,recurrence_end:e.target.value})}/></Field>}
+    <div className="field"><b>Repeat on</b><div className="weekday-picker">{days.map((name,day)=><label key={name} className="weekday-option"><input type="checkbox" checked={selected.includes(day)} onChange={()=>toggle(day)}/><span>{name}</span></label>)}</div></div>
+    {modal.recurrence_kind==='ongoing'&&<small>Ongoing notes are created only for the month being viewed. If the series is still active when the next month begins, that month's matching days will appear. Open any occurrence later to stop the ongoing series.</small>}
+  </div>
 }
 function Shell({children,authenticated=false,logout
 }){
