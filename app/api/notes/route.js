@@ -249,13 +249,40 @@ async function handleDELETE(req){
   if(!Number.isInteger(noteId)||noteId<1)return NextResponse.json({error:'Invalid note.'},{status:400});
 
   const rows=await sql`
-    select id,recurrence_id,event_date::text
-    from calendar_notes
-    where id=${noteId}
+    select n.id,n.recurrence_id,n.event_date::text,
+      r.ongoing as recurrence_ongoing
+    from calendar_notes n
+    left join note_recurrences r on r.id=n.recurrence_id
+    where n.id=${noteId}
   `;
   if(!rows.length)return NextResponse.json({deleted:0});
 
   const note=rows[0];
+  if(note.recurrence_id&&note.recurrence_ongoing===false){
+    await ensureRecurrenceExceptions(sql);
+    const result=await sql.begin(async transaction=>{
+      const deletedNotes=await transaction`
+        delete from calendar_notes
+        where recurrence_id=${note.recurrence_id}
+        returning id
+      `;
+      await transaction`
+        delete from note_recurrence_exceptions
+        where recurrence_id=${note.recurrence_id}
+      `;
+      await transaction`
+        delete from note_recurrences
+        where id=${note.recurrence_id} and ongoing=false
+      `;
+      return {deletedNotes:deletedNotes.length};
+    });
+    return NextResponse.json({
+      deleted:result.deletedNotes,
+      recurringOccurrence:true,
+      recurringSeriesDeleted:true,
+    });
+  }
+
   if(note.recurrence_id){
     await ensureRecurrenceExceptions(sql);
     const deleted=await sql.begin(async transaction=>{
