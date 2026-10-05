@@ -30,7 +30,7 @@ async function ensureScheduleTable(sql){
 }
 
 function normalizeRow(body,kind,order=0){
-  const row={
+  return{
     schedule_kind:kind,
     category:safe(body.category,60)||(kind==='employee'?'Employee':'Client/Kid'),
     first_name:safe(body.first_name,120),
@@ -44,7 +44,6 @@ function normalizeRow(body,kind,order=0){
     notes:safe(body.notes,500),
     display_order:Number.isInteger(Number(body.display_order))?Number(body.display_order):order,
   };
-  return row;
 }
 
 async function handleGET(req){
@@ -137,10 +136,26 @@ async function handlePATCH(req){
 
 async function handleDELETE(req){
   if(!authorized(req))return no();
-  const url=new URL(req.url),id=Number(url.searchParams.get('id')),kind=validKind(url.searchParams.get('kind'));
-  if(!Number.isInteger(id)||id<1||!kind)return NextResponse.json({error:'Invalid schedule row.'},{status:400});
+  const url=new URL(req.url);
+  const kind=validKind(url.searchParams.get('kind'));
+  if(!kind)return NextResponse.json({error:'Invalid schedule type.'},{status:400});
   const sql=await db();
   await ensureScheduleTable(sql);
+
+  const scope=url.searchParams.get('scope');
+  if(scope==='all'){
+    const deleted=await sql`delete from weekly_schedules where schedule_kind=${kind} returning id`;
+    return NextResponse.json({deleted:deleted.length});
+  }
+  if(scope==='section'){
+    const category=safe(url.searchParams.get('category'),60);
+    if(!category)return NextResponse.json({error:'Section category is required.'},{status:400});
+    const deleted=await sql`delete from weekly_schedules where schedule_kind=${kind} and category=${category} returning id`;
+    return NextResponse.json({deleted:deleted.length});
+  }
+
+  const id=Number(url.searchParams.get('id'));
+  if(!Number.isInteger(id)||id<1)return NextResponse.json({error:'Invalid schedule row.'},{status:400});
   const deleted=await sql`delete from weekly_schedules where id=${id} and schedule_kind=${kind} returning id`;
   return NextResponse.json({deleted:deleted.length});
 }
