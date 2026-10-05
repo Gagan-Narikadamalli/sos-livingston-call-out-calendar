@@ -29,7 +29,7 @@ function sectionKey(kind,category){
   return'Client/Kid';
 }
 
-function blankRow(kind,category){
+function blankRow(category){
   return{
     id:`draft-${Date.now()}-${Math.random()}`,
     _new:true,
@@ -112,7 +112,7 @@ export default function ScheduleWorkspace({manager=false,location}){
   }
 
   function addRow(category){
-    setRows(current=>[...current,blankRow(kind,category)]);
+    setRows(current=>[...current,blankRow(category)]);
     setMessage('');
   }
 
@@ -131,12 +131,38 @@ export default function ScheduleWorkspace({manager=false,location}){
   }
 
   async function deleteRow(row){
-    if(row._new){setRows(current=>current.filter(item=>item.id!==row.id));return;}
+    if(row._new){
+      setRows(current=>current.filter(item=>item.id!==row.id));
+      setMessage('Unsaved entry removed.');
+      return;
+    }
     if(!confirm(`Delete ${row.first_name}${row.last_name?' '+row.last_name:''} from this schedule?`))return;
     try{
       await apiRequest(`/api/schedules?kind=${kind}&id=${row.id}`,{method:'DELETE'});
       setRows(current=>current.filter(item=>item.id!==row.id));
       setMessage('Schedule entry deleted.');
+    }catch(error){setMessage(error.message);}
+  }
+
+  async function deleteSection(section){
+    const sectionRows=rows.filter(row=>sectionKey(kind,row.category)===section.key);
+    if(!sectionRows.length)return setMessage(`${section.title} is already empty.`);
+    if(!confirm(`Delete ALL ${sectionRows.length} entr${sectionRows.length===1?'y':'ies'} from ${section.title}? This cannot be undone.`))return;
+    try{
+      await apiRequest(`/api/schedules?kind=${kind}&scope=section&category=${encodeURIComponent(section.key)}`,{method:'DELETE'});
+      setRows(current=>current.filter(row=>sectionKey(kind,row.category)!==section.key));
+      setMessage(`All entries in ${section.title} were deleted.`);
+    }catch(error){setMessage(error.message);}
+  }
+
+  async function clearSchedule(){
+    if(!rows.length)return setMessage('This schedule is already empty.');
+    const title=kind==='employee'?'Employee Schedule':'Clients / Kids Schedule';
+    if(!confirm(`Delete ALL ${rows.length} entries from the ${title}? This clears every section and cannot be undone.`))return;
+    try{
+      await apiRequest(`/api/schedules?kind=${kind}&scope=all`,{method:'DELETE'});
+      setRows([]);
+      setMessage(`${title} cleared.`);
     }catch(error){setMessage(error.message);}
   }
 
@@ -172,7 +198,10 @@ export default function ScheduleWorkspace({manager=false,location}){
           <h2>{kind==='employee'?'Employee Schedule':'Clients / Kids Schedule'}</h2>
           <p>{loading?'Refreshing schedule…':`${rows.length} total ${kind==='employee'?'staff member(s)':'client/kid(s)'}`}</p>
         </div>
-        <input aria-label="Search schedule" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search name, hours, notes…"/>
+        <div className="schedule-topbar-actions">
+          <input aria-label="Search schedule" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search name, hours, notes…"/>
+          {manager&&<button type="button" className="danger schedule-clear-all" onClick={clearSchedule}>Clear Entire Schedule</button>}
+        </div>
       </div>
 
       {message&&<p className="message schedule-message">{message}</p>}
@@ -180,16 +209,19 @@ export default function ScheduleWorkspace({manager=false,location}){
 
       <div className="schedule-sections">
         {sections.map(section=>{
-          const sectionRows=rows.filter(row=>sectionKey(kind,row.category)===section.key&&matchesSearch(row,search));
+          const allSectionRows=rows.filter(row=>sectionKey(kind,row.category)===section.key);
+          const sectionRows=allSectionRows.filter(row=>matchesSearch(row,search));
           return <ScheduleSection
             key={section.key}
             section={section}
             rows={sectionRows}
+            totalCount={allSectionRows.length}
             manager={manager}
             kind={kind}
             updateRow={updateRow}
             saveRow={saveRow}
             deleteRow={deleteRow}
+            deleteSection={deleteSection}
             addRow={addRow}
           />;
         })}
@@ -198,7 +230,7 @@ export default function ScheduleWorkspace({manager=false,location}){
   </PageShell>;
 }
 
-function ScheduleSection({section,rows,manager,kind,updateRow,saveRow,deleteRow,addRow}){
+function ScheduleSection({section,rows,totalCount,manager,kind,updateRow,saveRow,deleteRow,deleteSection,addRow}){
   const noun=kind==='employee'?'Staff Member':'Client / Kid';
   return <section className={`schedule-section schedule-section-${section.tone}`}>
     <div className="schedule-section-head">
@@ -208,8 +240,9 @@ function ScheduleSection({section,rows,manager,kind,updateRow,saveRow,deleteRow,
         <p>{section.subtitle}</p>
       </div>
       <div className="schedule-section-actions">
-        <span className="schedule-count">{rows.length}</span>
+        <span className="schedule-count">{totalCount}</span>
         {manager&&<button type="button" onClick={()=>addRow(section.key)}>+ Add {noun}</button>}
+        {manager&&totalCount>0&&<button type="button" className="danger schedule-delete-section" onClick={()=>deleteSection(section)}>Delete All in Section</button>}
       </div>
     </div>
 
@@ -223,7 +256,7 @@ function ScheduleSection({section,rows,manager,kind,updateRow,saveRow,deleteRow,
           {manager&&<th>Actions</th>}
         </tr></thead>
         <tbody>
-          {!rows.length&&<tr><td className="schedule-empty" colSpan={manager?9:8}>{manager?'No entries yet. Use the Add button above to create one.':'No entries in this section.'}</td></tr>}
+          {!rows.length&&<tr><td className="schedule-empty" colSpan={manager?9:8}>{manager?'No entries shown. Use Add to create one.':'No entries in this section.'}</td></tr>}
           {rows.map(row=><ScheduleRow key={row.id} row={row} manager={manager} updateRow={updateRow} saveRow={saveRow} deleteRow={deleteRow}/>) }
         </tbody>
       </table>
