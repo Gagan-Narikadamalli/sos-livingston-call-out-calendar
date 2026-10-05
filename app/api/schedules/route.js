@@ -70,35 +70,6 @@ async function handlePOST(req){
   const sql=await db();
   await ensureScheduleTable(sql);
 
-  if(body.action==='import'){
-    const incoming=Array.isArray(body.rows)?body.rows:[];
-    if(!incoming.length)return NextResponse.json({error:'No schedule rows were found to import.'},{status:400});
-    if(incoming.length>500)return NextResponse.json({error:'Import is limited to 500 schedule rows at a time.'},{status:400});
-    const rows=incoming.map((row,index)=>normalizeRow(row,kind,index)).filter(row=>row.first_name);
-    if(!rows.length)return NextResponse.json({error:'Every imported row was blank.'},{status:400});
-    await sql.begin(async transaction=>{
-      if(body.replace!==false)await transaction`delete from weekly_schedules where schedule_kind=${kind}`;
-      let offset=0;
-      if(body.replace===false){
-        const existing=await transaction`select coalesce(max(display_order),-1)+1 as next from weekly_schedules where schedule_kind=${kind}`;
-        offset=Number(existing[0]?.next||0);
-      }
-      for(let index=0;index<rows.length;index+=1){
-        const row=rows[index];
-        await transaction`
-          insert into weekly_schedules(
-            schedule_kind,category,first_name,last_name,assigned_to,
-            monday,tuesday,wednesday,thursday,friday,notes,display_order
-          ) values(
-            ${kind},${row.category},${row.first_name},${row.last_name||''},${row.assigned_to||''},
-            ${row.monday||''},${row.tuesday||''},${row.wednesday||''},${row.thursday||''},${row.friday||''},${row.notes||''},${offset+index}
-          )
-        `;
-      }
-    });
-    return NextResponse.json({ok:true,imported:rows.length});
-  }
-
   const row=normalizeRow(body,kind,0);
   if(!row.first_name)return NextResponse.json({error:'A first name or client/kid name is required.'},{status:400});
   const maxRows=await sql`select coalesce(max(display_order),-1)+1 as next from weekly_schedules where schedule_kind=${kind}`;
