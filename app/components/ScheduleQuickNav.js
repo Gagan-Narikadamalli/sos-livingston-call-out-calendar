@@ -9,9 +9,14 @@ export default function ScheduleQuickNav(){
   if(!isManager&&!isCalendar)return null;
 
   const base=isManager?'/manager':'/calendar';
-  return <nav className="schedule-quick-nav" aria-label="Calendar views">
-    <a className={!pathname.includes('/schedules')?'active':''} href={base}>Call-Out Calendar</a>
-    <a href={`${base}/schedules?view=employee`}>Employee Schedule</a>
-    <a href={`${base}/schedules?view=client`}>Clients / Kids Schedule</a>
-  </nav>;
+  const onSchedules=pathname.includes('/schedules');
+  return <details className="schedule-quick-nav">
+    <summary aria-label="Open calendar views">Schedules</summary>
+    <nav className="schedule-quick-menu" aria-label="Calendar views">
+      <span>Calendar views</span>
+      <a className={!onSchedules?'active':''} href={base}>Call-Out Calendar</a>
+      <a href={`${base}/schedules?view=employee`}>Employee Schedule</a>
+      <a href={`${base}/schedules?view=client`}>Clients / Kids Schedule</a>
+    </nav>
+  </details>;
 }
