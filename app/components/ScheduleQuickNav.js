@@ -14,7 +14,7 @@ export default function ScheduleQuickNav(){
     <summary aria-label="Open calendar views">Schedules</summary>
     <nav className="schedule-quick-menu" aria-label="Calendar views">
       <span>Calendar views</span>
-      <a className={!onSchedules?'active':''} href={base}>Call-Out Calendar</a>
+      <a className={!onSchedules?'active':''} href={base}>Livingston Calendar</a>
       <a href={`${base}/schedules?view=employee`}>Employee Schedule</a>
       <a href={`${base}/schedules?view=client`}>Clients / Kids Schedule</a>
     </nav>

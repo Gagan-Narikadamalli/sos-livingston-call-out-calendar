@@ -114,13 +114,13 @@ export default function TeamCalendar(){
   }
 
   if(authenticated===null){
-    return <Shell><main className="manager-login"><section className="card login-card"><h1>{LOCATION} Call Out Calendar</h1><p>Checking calendar access…</p></section></main></Shell>;
+    return <Shell><main className="manager-login"><section className="card login-card"><h1>{LOCATION} Calendar</h1><p>Checking calendar access…</p></section></main></Shell>;
   }
 
   if(!authenticated){
     return <Shell><main className="manager-login"><form className="card login-card" onSubmit={login}>
       <span className="login-label">AUTHORIZED TEAM ACCESS</span>
-      <h1>View the {LOCATION} Call Out Calendar</h1>
+      <h1>View the {LOCATION} Calendar</h1>
       <p>Enter the calendar password to view {LOCATION} call-outs, time-off requests, and manager notes.</p>
       <label className="field"><b>Calendar password</b><input type="password" required autoFocus value={password} onChange={e=>setPassword(e.target.value)} placeholder="Enter calendar password"/></label>
       {message&&<p className="message error-message">{message}</p>}
@@ -138,7 +138,7 @@ export default function TeamCalendar(){
   return <Shell authenticated logout={logout}>
     <main className="manager viewer">
       <section className="viewer-banner">
-        <div><h1>{LOCATION} Call Out Calendar</h1><p>Employee, parent/client, and manager calendar notes.</p></div>
+        <div><h1>{LOCATION} Calendar</h1><p>Employee, parent/client, and manager calendar notes.</p></div>
         <span className="readonly">READ-ONLY VIEW</span>
       </section>
 
@@ -190,7 +190,7 @@ export default function TeamCalendar(){
 function Shell({children,authenticated=false,logout}){
   return <>
     <header>
-      <Brand title={`${LOCATION} Call Out Calendar`} subtitle="Success On The Spectrum"/>
+      <Brand title={`${LOCATION} Calendar`} subtitle="Success On The Spectrum"/>
       <nav className="manager-nav">
         <a href="/">Form</a>
         {authenticated&&<button className="link" onClick={logout}>Log out</button>}

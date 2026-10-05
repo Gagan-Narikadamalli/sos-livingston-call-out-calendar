@@ -283,7 +283,7 @@ function PageShell({children,location,manager,logout}){
     <header>
       <Brand title={`${location} ${manager?'Manager ':''}Schedules`} subtitle="Success On The Spectrum"/>
       <nav className="manager-nav">
-        <a href={manager?'/manager':'/calendar'}>Call-Out Calendar</a>
+        <a href={manager?'/manager':'/calendar'}>{location} Calendar</a>
         {logout&&<button className="link" type="button" onClick={logout}>Log out</button>}
       </nav>
     </header>
