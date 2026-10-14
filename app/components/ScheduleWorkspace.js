@@ -2,6 +2,8 @@
 
 import {useEffect,useMemo,useState} from 'react';
 import Brand from './Brand';
+import ScheduleTimeInput from './ScheduleTimeInput';
+import {parseScheduleTime,normalizedScheduleTime,formatHours} from '../../lib/schedule-time.mjs';
 import OverallScheduleSummary from './OverallScheduleSummary';
 import {apiRequest} from '../../lib/client-api';
 
@@ -9,7 +11,7 @@ const DAY_FIELDS=['monday','tuesday','wednesday','thursday','friday'];
 const DAY_LABELS=['Monday','Tuesday','Wednesday','Thursday','Friday'];
 
 const employeeSections=[
-  {key:'Employee',title:'Regular Employees',subtitle:'Weekly schedule for regular staff members.',tone:'employee'},
+  {key:'Employee',title:'BT',subtitle:'Weekly schedule for behavior technicians.',tone:'employee'},
   {key:'BCBA',title:'BCBA',subtitle:'Weekly schedule for BCBA team members.',tone:'bcba'},
   {key:'Intern',title:'Interns',subtitle:'Weekly schedule for interns.',tone:'intern'},
 ];
@@ -120,12 +122,17 @@ export default function ScheduleWorkspace({manager=false,location}){
 
   async function saveRow(row){
     if(!String(row.first_name||'').trim())return setMessage('Enter a first name before saving.');
+    for(const day of DAY_FIELDS){
+      const time=parseScheduleTime(row[day]);
+      if(!time.valid)return setMessage(`${day[0].toUpperCase()+day.slice(1)}: ${time.error}`);
+    }
+    const hours=Object.fromEntries(DAY_FIELDS.map(day=>[day,normalizedScheduleTime(row[day])]));
     try{
       const canonicalCategory=sectionKey(kind,row.category);
       const saved=await apiRequest('/api/schedules',{
         method:row._new?'POST':'PATCH',
         headers:{'content-type':'application/json'},
-        body:JSON.stringify({...row,category:canonicalCategory,kind}),
+        body:JSON.stringify({...row,...hours,category:canonicalCategory,kind}),
       });
       setRows(current=>current.map(item=>item.id===row.id?saved:item));
       setMessage(`${row.first_name}${row.last_name?' '+row.last_name:''} saved successfully.`);
@@ -277,7 +284,7 @@ function ScheduleRow({row,manager,updateRow,saveRow,deleteRow}){
   return <tr>
     <td>{textCell('first_name')}</td>
     <td>{textCell('last_name')}</td>
-    {DAY_FIELDS.map(day=><td key={day}>{textCell(day)}</td>)}
+    {DAY_FIELDS.map(day=>{const time=parseScheduleTime(row[day]);return <td key={day}>{manager?<ScheduleTimeInput value={row[day]||''} onChange={value=>updateRow(row.id,day,value)} label={`${row.first_name||'Schedule'} ${day}`}/>:<div><span>{time.valid?normalizedScheduleTime(row[day])||'—':row[day]}</span>{time.valid&&time.minutes>0&&<small className="schedule-hours">{formatHours(time.minutes)} hrs</small>}</div>}</td>;})}
     <td>{manager?<textarea className="schedule-notes-input" value={row.notes||''} onChange={event=>updateRow(row.id,'notes',event.target.value)}/>:<span>{row.notes||'—'}</span>}</td>
     {manager&&<td><div className="schedule-row-actions"><button type="button" onClick={()=>saveRow(row)}>Save</button><button type="button" className="danger" onClick={()=>deleteRow(row)}>Delete</button></div></td>}
   </tr>;

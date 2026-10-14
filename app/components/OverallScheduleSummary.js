@@ -1,42 +1,54 @@
 'use client';
-
 import {useEffect,useState} from 'react';
 import {apiRequest} from '../../lib/client-api';
-import {summarizeSchedules} from '../../lib/schedule-summary.mjs';
-
+import {summarizeSchedules,averageBtShortage,invalidScheduleEntries,isCenterClient} from '../../lib/schedule-summary.mjs';
+import {WEEKDAYS,DAY_NAMES,parseScheduleTime,formatHours,scheduleCategory} from '../../lib/schedule-time.mjs';
+const dayName=day=>DAY_NAMES[WEEKDAYS.indexOf(day)];
+const categoryName=row=>({bt:'BT',bcba:'BCBA',intern:'Intern'}[scheduleCategory(row)]);
+const decimal=value=>value.toLocaleString('en-US',{maximumFractionDigits:2});
+function Shortage({value}){return <span className={`summary-badge ${value?'summary-badge-short':'summary-badge-ok'}`}>{value}</span>;}
+function SummaryTable({headers,children}){return <div className="schedule-group-table-wrap"><table className="schedule-group-table"><thead><tr>{headers.map(label=><th key={label} scope="col">{label}</th>)}</tr></thead><tbody>{children}</tbody></table></div>;}
+function CoverageSection({days,includeInterns=false}){
+ const key=includeInterns?'withInterns':'btOnly';
+ return <section className="schedule-section"><div className="schedule-section-head"><div><h3>{includeInterns?'BT + intern coverage':'BT-only coverage'}</h3><p>{includeInterns?'Includes BTs and interns. BCBAs excluded.':'Includes BTs only. BCBAs and interns excluded.'} 10% call-outs rounded up to a whole person.</p></div></div>
+ <SummaryTable headers={['Day',includeInterns?'BT + interns':'BT','Clients','10% call-outs','Remaining',includeInterns?'BT + intern shortage':'BT shortage','Surplus']}>
+ {days.map(row=><tr key={row.day}><th scope="row">{dayName(row.day)}</th><td>{row[key].staff}</td><td>{row.clients}</td><td>{row[key].callOuts}</td><td>{row[key].remaining}</td><td><Shortage value={row[key].shortage}/></td><td>{row[key].surplus}</td></tr>)}
+ </SummaryTable></section>;
+}
 export default function OverallScheduleSummary({onUnauthorized}){
-  const [data,setData]=useState(null);
-  const [error,setError]=useState('');
-  const [loading,setLoading]=useState(true);
-  const [refresh,setRefresh]=useState(0);
-  useEffect(()=>{
-    let active=true;
-    setLoading(true);setError('');setData(null);
-    Promise.all([apiRequest('/api/schedules?kind=employee'),apiRequest('/api/schedules?kind=client')])
-      .then(([employees,clients])=>{if(active)setData({employees,clients});})
-      .catch(error=>{if(active){setError(error.message);if(error.status===401)onUnauthorized();}})
-      .finally(()=>{if(active)setLoading(false);});
-    return()=>{active=false;};
-  },[refresh]);
-  const days=data?summarizeSchedules(data.employees,data.clients):[];
-  const title=day=>day[0].toUpperCase()+day.slice(1);
-  return <section className="overall-summary" aria-busy={loading}>
-    <div className="schedule-topbar"><div><h2>Overall Summary</h2><p>Weekly staffing and client attendance from saved schedule information.</p></div><button type="button" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>Refresh Summary</button></div>
-    {loading&&<p role="status">Loading staff and client schedules…</p>}
-    {error&&<p className="message error-message" role="alert">Could not load summary: {error}</p>}
-    {data&&<>
-      <div className="summary-totals">
-        <div className="card summary-stat summary-stat-staff"><span className="summary-stat-label">STAFF ROSTER</span><h3>Total employees</h3><strong>{data.employees.length}</strong><p>Saved employee schedules</p></div>
-        <div className="card summary-stat summary-stat-clients"><span className="summary-stat-label">CLIENT ROSTER</span><h3>Total clients / kids</h3><strong>{data.clients.length}</strong><p>Saved client schedules</p></div>
-        <div className="card summary-stat"><span className="summary-stat-label">BUSIEST DAY</span><h3>Peak daily clients</h3><strong>{Math.max(0,...days.map(row=>row.clients))}</strong><p>Monday–Friday attendance</p></div>
-        <div className="card summary-stat summary-stat-coverage"><span className="summary-stat-label">10% CALL-OUT SCENARIO</span><h3>Largest staff shortage</h3><strong>{Math.max(0,...days.map(row=>row.shortage))}</strong><p>Maximum daily staff short</p></div>
-      </div>
-      <section className="schedule-section"><div className="schedule-section-head"><div><h3>Employees and clients per day</h3><p>Each person is counted once when that day's schedule contains hours. Blank days and off-days are not counted.</p></div></div>
-        <div className="schedule-group-table-wrap"><table className="schedule-group-table"><thead><tr><th>Day</th><th>Total staff</th><th>Regular employees</th><th>BCBAs</th><th>Interns</th><th>Total clients</th><th>In-center clients</th><th>Home clients</th></tr></thead><tbody>{days.map(row=><tr key={row.day}><th scope="row">{title(row.day)}</th><td>{row.employees}</td><td>{row.regular}</td><td>{row.bcba}</td><td>{row.interns}</td><td>{row.clients}</td><td>{row.clients-row.home}</td><td>{row.home}</td></tr>)}</tbody></table></div>
-      </section>
-      <section className="schedule-section"><div className="schedule-section-head"><div><h3>Coverage with 10% employee call-outs</h3><p>Call-outs = 10% of that day's scheduled staff, rounded up to a whole person.</p></div></div>
-        <div className="schedule-group-table-wrap"><table className="schedule-group-table"><thead><tr><th>Day</th><th>Scheduled staff</th><th>Scheduled clients</th><th>Assumed call-outs</th><th>Staff remaining</th><th>Staff short</th><th>Staff surplus</th></tr></thead><tbody>{days.map(row=><tr key={row.day}><th scope="row">{title(row.day)}</th><td>{row.employees}</td><td>{row.clients}</td><td>{row.callOuts}</td><td>{row.remaining}</td><td><span className={`summary-badge ${row.shortage?'summary-badge-short':'summary-badge-ok'}`}>{row.shortage}</span></td><td>{row.surplus}</td></tr>)}</tbody></table></div>
-      </section>
-    </>}
-  </section>;
+ const [data,setData]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[refresh,setRefresh]=useState(0);
+ useEffect(()=>{
+  let active=true;
+  setLoading(true);setError('');setData(null);
+  Promise.all([apiRequest('/api/schedules?kind=employee'),apiRequest('/api/schedules?kind=client')])
+   .then(([employees,clients])=>{if(active)setData({employees,clients});})
+   .catch(error=>{if(active){setError(error.message);if(error.status===401)onUnauthorized();}})
+   .finally(()=>{if(active)setLoading(false);});
+  return()=>{active=false;};
+ },[refresh]);
+ const days=data?summarizeSchedules(data.employees,data.clients):[];
+ const invalid=data?invalidScheduleEntries(data.employees,data.clients):[];
+ return <section className="overall-summary" aria-busy={loading}>
+ <div className="schedule-topbar"><div><h2>Overall Summary</h2><p>Weekly attendance, working hours, and BT coverage from saved schedules.</p></div><button type="button" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>Refresh Summary</button></div>
+ {loading&&<p role="status">Loading staff and client schedules…</p>}{error&&<p className="message error-message" role="alert">Could not load summary: {error}</p>}
+ {data&&<>
+ <div className="summary-totals">
+  <div className="card summary-stat summary-stat-staff"><span className="summary-stat-label">STAFF ROSTER</span><h3>Total employees</h3><strong>{data.employees.length}</strong><p>BT, BCBA, and interns</p></div>
+  <div className="card summary-stat summary-stat-clients"><span className="summary-stat-label">CLIENT ROSTER</span><h3>Total clients / kids</h3><strong>{data.clients.filter(isCenterClient).length}</strong><p>In-center schedules</p></div>
+  <div className="card summary-stat summary-stat-coverage"><span className="summary-stat-label">BT ONLY · 10% CALL-OUTS</span><h3>Average BT shortage</h3><strong>{decimal(averageBtShortage(days))}</strong><p>Monday–Friday, including zero-shortage days</p></div>
+  <div className="card summary-stat"><span className="summary-stat-label">WEEKLY HOURS</span><h3>Total staff hours</h3><strong>{formatHours(days.reduce((sum,row)=>sum+row.staffMinutes,0))}</strong><p>BT, BCBA, and intern scheduled hours</p></div>
+ </div>
+ {invalid.length>0&&<div className="summary-validation" role="alert"><h3>Schedule times need correction</h3><p>These entries are excluded from daily counts and hours until corrected in the schedule sheet.</p><ul>{invalid.map((item,index)=><li key={`${item.id}-${item.day}-${index}`}>{item.name} · {dayName(item.day)}: {item.value}</li>)}</ul></div>}
+ <section className="schedule-section"><div className="schedule-section-head"><div><h3>Daily staff, clients, and hours</h3><p>Blank days count as not scheduled. Working hours are the sum of entered time ranges.</p></div></div>
+ <SummaryTable headers={['Day','BT','BCBA','Interns','Clients','BT hours','BCBA hours','Intern hours','Total staff hours']}>
+ {days.map(row=><tr key={row.day}><th scope="row">{dayName(row.day)}</th><td>{row.bt}</td><td>{row.bcba}</td><td>{row.interns}</td><td>{row.clients}</td><td>{formatHours(row.btMinutes)}</td><td>{formatHours(row.bcbaMinutes)}</td><td>{formatHours(row.internMinutes)}</td><td className="summary-total-cell">{formatHours(row.staffMinutes)}</td></tr>)}
+ </SummaryTable></section>
+ <CoverageSection days={days}/><CoverageSection days={days} includeInterns/>
+ <section className="schedule-section"><div className="schedule-section-head"><div><h3>Hours per staff member</h3><p>Daily and weekly scheduled working hours for each employee.</p></div></div>
+ <SummaryTable headers={['Staff member','Category',...DAY_NAMES,'Weekly hours']}>
+ {!data.employees.length&&<tr><td colSpan={8}>No employee schedules saved.</td></tr>}
+ {data.employees.map(employee=>{const times=WEEKDAYS.map(day=>parseScheduleTime(employee[day]));return <tr key={employee.id}><th scope="row">{[employee.first_name,employee.last_name].filter(Boolean).join(' ')}</th><td>{categoryName(employee)}</td>{times.map((time,index)=><td key={WEEKDAYS[index]}>{time.valid?formatHours(time.minutes):<span className="schedule-time-error">Check time</span>}</td>)}<td className="summary-total-cell">{formatHours(times.reduce((sum,time)=>sum+time.minutes,0))}{times.some(time=>!time.valid)&&<small>Incomplete</small>}</td></tr>;})}
+ </SummaryTable></section>
+ </>}
+ </section>;
 }

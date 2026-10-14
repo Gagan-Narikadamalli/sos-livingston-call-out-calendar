@@ -20,3 +20,21 @@
 .summary-badge-short{color:#991b1b;background:#fee2e2}.summary-badge-ok{color:#166534;background:#dcfce7}
 @media(max-width:1100px){.overall-summary .summary-totals{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.overall-summary .summary-totals{grid-template-columns:1fr}.overall-summary .schedule-section-head{padding:16px}.overall-summary .summary-stat{padding:18px}}
+
+.schedule-time-input{display:grid;gap:6px;min-width:145px}
+.schedule-time-range{display:grid;grid-template-columns:1fr 1fr auto;align-items:end;gap:4px}
+.schedule-time-range label{display:grid;gap:3px;min-width:0;font-size:10px;color:#607687}
+.schedule-group-table .schedule-time-range input{padding:6px 3px;font-size:12px;min-width:0}
+.schedule-time-input button{padding:4px 7px;font-size:11px;border-radius:6px;box-shadow:none}
+.schedule-time-add{background:#e7eef4;color:#17305e;justify-self:start}
+.schedule-time-remove{background:#fbecec;color:#991b1b}
+.schedule-hours{display:block;font-size:11px;font-weight:700;color:#14778c;margin-top:3px}
+.schedule-time-error,.schedule-time-invalid{color:#991b1b;font-size:11px}
+.schedule-time-input small{font-size:11px}
+.schedule-sections .schedule-group-table-wrap{overflow-x:auto}
+.schedule-sections .schedule-group-table{min-width:1400px;table-layout:auto}
+.schedule-sections .schedule-group-table th,.schedule-sections .schedule-group-table td{width:auto!important}
+.summary-validation{padding:18px 22px;margin-bottom:24px;border:1px solid #f5d199;border-radius:14px;color:#854d0e;background:#fffbeb}
+.summary-validation h3{margin:0 0 8px}.summary-validation p{margin:0}.summary-validation ul{margin-bottom:0}
+.overall-summary .summary-total-cell{font-weight:800;color:#17305e;background:#edf5fa}
+.overall-summary .summary-total-cell small{display:block;font-size:10px;color:#991b1b}

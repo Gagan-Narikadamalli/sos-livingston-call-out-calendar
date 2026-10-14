@@ -1,4 +1,5 @@
 import {NextResponse} from 'next/server';
+import {WEEKDAYS,parseScheduleTime,normalizedScheduleTime} from '../../../lib/schedule-time.mjs';
 import {withApiErrors} from '../../../lib/api';
 import {authorized,calendarAuthorized} from '../../../lib/auth';
 import {db} from '../../../lib/db';
@@ -36,11 +37,11 @@ function normalizeRow(body,kind,order=0){
     first_name:safe(body.first_name,120),
     last_name:safe(body.last_name,120),
     assigned_to:safe(body.assigned_to,160),
-    monday:safe(body.monday,120),
-    tuesday:safe(body.tuesday,120),
-    wednesday:safe(body.wednesday,120),
-    thursday:safe(body.thursday,120),
-    friday:safe(body.friday,120),
+    monday:normalizedScheduleTime(body.monday),
+    tuesday:normalizedScheduleTime(body.tuesday),
+    wednesday:normalizedScheduleTime(body.wednesday),
+    thursday:normalizedScheduleTime(body.thursday),
+    friday:normalizedScheduleTime(body.friday),
     notes:safe(body.notes,500),
     display_order:Number.isInteger(Number(body.display_order))?Number(body.display_order):order,
   };
@@ -66,6 +67,8 @@ async function handlePOST(req){
   if(!authorized(req))return no();
   const body=await req.json();
   const kind=validKind(body.kind);
+  const invalidDay=WEEKDAYS.find(day=>!parseScheduleTime(body[day]).valid);
+  if(invalidDay)return NextResponse.json({error:`${invalidDay}: ${parseScheduleTime(body[invalidDay]).error}`},{status:400});
   if(!kind)return NextResponse.json({error:'Invalid schedule type.'},{status:400});
   const sql=await db();
   await ensureScheduleTable(sql);
@@ -89,6 +92,8 @@ async function handlePATCH(req){
   if(!authorized(req))return no();
   const body=await req.json();
   const id=Number(body.id),kind=validKind(body.kind);
+  const invalidDay=WEEKDAYS.find(day=>!parseScheduleTime(body[day]).valid);
+  if(invalidDay)return NextResponse.json({error:`${invalidDay}: ${parseScheduleTime(body[invalidDay]).error}`},{status:400});
   if(!Number.isInteger(id)||id<1||!kind)return NextResponse.json({error:'Invalid schedule row.'},{status:400});
   const row=normalizeRow(body,kind,0);
   if(!row.first_name)return NextResponse.json({error:'A first name or client/kid name is required.'},{status:400});
