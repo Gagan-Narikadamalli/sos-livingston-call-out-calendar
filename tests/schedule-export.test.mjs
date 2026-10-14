@@ -23,10 +23,10 @@ test('all three exports roundtrip as native xlsx with numbers, sheets and format
   const workbook=await createScheduleWorkbook(ExcelJS,{kind,employees,clients,location:'Test Clinic',exportedAt:new Date('2026-10-14T18:00:00Z')});
   const buffer=await workbook.xlsx.writeBuffer();assert.equal(buffer[0],80);assert.equal(buffer[1],75);
   const read=new ExcelJS.Workbook();await read.xlsx.load(buffer);
-  assert.equal(read.worksheets.length,buildScheduleExport(kind,employees,clients).length);
+  assert.equal(read.worksheets.length,kind==='summary'?1:buildScheduleExport(kind,employees,clients).length);
   assert.ok(read.worksheets[0].getCell('A1').value.includes('Test Clinic'));
-  assert.equal(read.worksheets[0].views[0].ySplit,kind==='summary'?4:5);
-  if(kind==='summary')assert.equal(read.getWorksheet('Daily Summary').getCell('B5').value,1);
+  assert.equal(read.worksheets[0].views[0].ySplit,kind==='summary'?3:5);
+  if(kind==='summary'){const sheet=read.getWorksheet('Overall Summary');const index=sheet.getColumn(1).values.indexOf('Daily staff, clients, and hours');assert.equal(sheet.getCell(index+2,2).value,1);}
   else {assert.equal(read.worksheets[0].getCell('A5').value,'First Name');assert.equal(read.worksheets[0].columnCount,8);}
  }
 });
@@ -42,4 +42,16 @@ test('schedule rows sort alphabetically inside each category without mutating so
  assert.deepEqual(sheet.groups[0].rows.map(row=>row[0]),['amy','Zoe']);
  assert.equal(sheet.groups.find(group=>group.title==='Interns').rows[0][0],'Ben');
  assert.equal(source[0].first_name,'Zoe');
+});
+
+test('summary opens as one complete worksheet with clean integer and fractional formats',async()=>{
+ const workbook=await createScheduleWorkbook(ExcelJS,{kind:'summary',employees,clients,location:'Test'});
+ const read=new ExcelJS.Workbook();await read.xlsx.load(await workbook.xlsx.writeBuffer());
+ const sheet=read.getWorksheet('Overall Summary');assert.equal(read.worksheets.length,1);
+ const labels=sheet.getColumn(1).values;
+ for(const label of ['Overview','Daily staff, clients, and hours','BT-only coverage','BT + intern coverage','Hours per staff member','Average'])assert.ok(labels.includes(label),label);
+ const countIndex=labels.indexOf('Total employees');assert.equal(sheet.getCell(countIndex,2).numFmt,'#,##0');
+ const rateIndex=labels.indexOf('Assumed call-out rate');assert.equal(sheet.getCell(rateIndex,2).numFmt,'0%');
+ const averageIndex=labels.indexOf('Average');assert.equal(sheet.getCell(averageIndex,2).numFmt,'#,##0.00');
+ assert.equal(sheet.getCell(averageIndex,2).value,0.2);
 });
