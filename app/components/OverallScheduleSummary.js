@@ -11,7 +11,7 @@ function SummaryTable({headers,children}){return <div className="schedule-group-
 function CoverageSection({days,includeInterns=false}){
  const key=includeInterns?'withInterns':'btOnly';
  return <section className="schedule-section"><div className="schedule-section-head"><div><h3>{includeInterns?'BT + intern coverage':'BT-only coverage'}</h3><p>{includeInterns?'Includes BTs and interns. BCBAs excluded.':'Includes BTs only. BCBAs and interns excluded.'} Only staff and clients with at least 4 scheduled hours that day are counted here. 10% call-outs rounded up to a whole person.</p></div></div>
- <SummaryTable headers={['Day',includeInterns?'BT + interns (4+ hrs)':'BT (4+ hrs)','Clients (4+ hrs)','10% call-outs','Remaining',includeInterns?'BT + intern shortage':'BT shortage','Surplus']}>
+ <SummaryTable headers={['Day',includeInterns?'BT + interns':'BT','Clients','10% call-outs','Remaining',includeInterns?'BT + intern shortage':'BT shortage','Surplus']}>
  {days.map(row=><tr key={row.day}><th scope="row">{dayName(row.day)}</th><td>{row[key].staff}</td><td>{row.coverageClients}</td><td>{row[key].callOuts}</td><td>{row[key].remaining}</td><td><Shortage value={row[key].shortage}/></td><td>{row[key].surplus}</td></tr>)}
  </SummaryTable></section>;
 }
