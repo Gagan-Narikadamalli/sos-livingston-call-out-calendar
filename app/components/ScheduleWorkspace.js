@@ -2,6 +2,7 @@
 
 import {useEffect,useMemo,useState} from 'react';
 import Brand from './Brand';
+import {sortScheduleRows} from '../../lib/schedule-order.mjs';
 import ScheduleExportButton from './ScheduleExportButton';
 import ScheduleEditor from './ScheduleEditor';
 import {parseScheduleTime,normalizedScheduleTime} from '../../lib/schedule-time.mjs';
@@ -237,7 +238,7 @@ export default function ScheduleWorkspace({manager=false,location}){
       <div className="schedule-sections">
         {sections.map(section=>{
           const allSectionRows=rows.filter(row=>sectionKey(kind,row.category)===section.key);
-          const sectionRows=allSectionRows.filter(row=>matchesSearch(row,search));
+          const sectionRows=sortScheduleRows(allSectionRows.filter(row=>matchesSearch(row,search)));
           return <ScheduleSection
             key={section.key}
             section={section}
