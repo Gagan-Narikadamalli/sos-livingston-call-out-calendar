@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {hasScheduledHours,summarizeSchedules,averageBtShortage,invalidScheduleEntries} from '../lib/schedule-summary.mjs';
+import {hasScheduledHours,summarizeSchedules,averageDailyMetrics,averageBtShortage,invalidScheduleEntries} from '../lib/schedule-summary.mjs';
 import {parseScheduleTime,normalizedScheduleTime,serializeRanges} from '../lib/schedule-time.mjs';
 test('blank/off days are not availability; malformed times are flagged',()=>{
  for(const value of ['',null,'  ','Off','N/A','—','---','PTO','not working'])assert.equal(hasScheduledHours(value),false);
@@ -52,4 +52,10 @@ test('client hours total split shifts by day, excluding home, blank and malforme
  assert.equal(days[1].clientMinutes,480);
  assert.equal(days[2].clientMinutes,0);
  assert.equal(days.reduce((total,day)=>total+day.clientMinutes,0),1140);
+});
+
+test('daily averages include all five days and every count and hours column',()=>{
+ const days=summarizeSchedules([{category:'Employee',monday:'8-4'},{category:'Intern',monday:'9-12',tuesday:'9-12'}],[{monday:'8-4',tuesday:'8-4'}]);
+ assert.deepEqual(averageDailyMetrics(days),{bt:0.2,bcba:0,interns:0.4,clients:0.4,btMinutes:96,bcbaMinutes:0,internMinutes:72,staffMinutes:168,clientMinutes:192});
+ assert.equal(averageDailyMetrics([]).staffMinutes,0);
 });

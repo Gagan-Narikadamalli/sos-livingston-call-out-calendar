@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {apiRequest} from '../../lib/client-api';
-import {summarizeSchedules,averageBtShortage,invalidScheduleEntries,isCenterClient} from '../../lib/schedule-summary.mjs';
+import {summarizeSchedules,averageDailyMetrics,averageBtShortage,invalidScheduleEntries,isCenterClient} from '../../lib/schedule-summary.mjs';
 import {WEEKDAYS,DAY_NAMES,parseScheduleTime,formatHours,scheduleCategory} from '../../lib/schedule-time.mjs';
 const dayName=day=>DAY_NAMES[WEEKDAYS.indexOf(day)];
 const categoryName=row=>({bt:'BT',bcba:'BCBA',intern:'Intern'}[scheduleCategory(row)]);
@@ -27,6 +27,7 @@ export default function OverallScheduleSummary({onUnauthorized}){
   return()=>{active=false;};
  },[refresh]);
  const days=data?summarizeSchedules(data.employees,data.clients):[];
+ const average=averageDailyMetrics(days);
  const invalid=data?invalidScheduleEntries(data.employees,data.clients):[];
  return <section className="overall-summary" aria-busy={loading}>
  <div className="schedule-topbar"><div><h2>Overall Summary</h2><p>Weekly attendance, working hours, and BT coverage from saved schedules.</p></div><button type="button" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>Refresh Summary</button></div>
@@ -43,6 +44,7 @@ export default function OverallScheduleSummary({onUnauthorized}){
  <section className="schedule-section"><div className="schedule-section-head"><div><h3>Daily staff, clients, and hours</h3><p>Blank days count as not scheduled. Working hours are the sum of entered time ranges.</p></div></div>
  <SummaryTable headers={['Day','BT','BCBA','Interns','Clients','BT hours','BCBA hours','Intern hours','Total staff hours','Total client hours']}>
  {days.map(row=><tr key={row.day}><th scope="row">{dayName(row.day)}</th><td>{row.bt}</td><td>{row.bcba}</td><td>{row.interns}</td><td>{row.clients}</td><td>{formatHours(row.btMinutes)}</td><td>{formatHours(row.bcbaMinutes)}</td><td>{formatHours(row.internMinutes)}</td><td className="summary-total-cell">{formatHours(row.staffMinutes)}</td><td className="summary-total-cell">{formatHours(row.clientMinutes)}</td></tr>)}
+ <tr className="summary-average-row"><th scope="row">Average</th><td>{decimal(average.bt)}</td><td>{decimal(average.bcba)}</td><td>{decimal(average.interns)}</td><td>{decimal(average.clients)}</td><td>{formatHours(average.btMinutes)}</td><td>{formatHours(average.bcbaMinutes)}</td><td>{formatHours(average.internMinutes)}</td><td>{formatHours(average.staffMinutes)}</td><td>{formatHours(average.clientMinutes)}</td></tr>
  </SummaryTable></section>
  <CoverageSection days={days}/><CoverageSection days={days} includeInterns/>
  <section className="schedule-section"><div className="schedule-section-head"><div><h3>Hours per staff member</h3><p>Daily and weekly scheduled working hours for each employee.</p></div></div>
