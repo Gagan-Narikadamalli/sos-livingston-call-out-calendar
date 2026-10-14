@@ -29,7 +29,7 @@ export default function ScheduleEditor({row,kind,onSave,onClose}){
    <div className="schedule-editor-details">
     <label className="field"><b>First name <span aria-hidden="true">*</span></b><input required maxLength={120} autoFocus value={draft.first_name||''} onChange={event=>update('first_name',event.target.value)}/></label>
     <label className="field"><b>Last name</b><input maxLength={120} value={draft.last_name||''} onChange={event=>update('last_name',event.target.value)}/></label>
-    <label className="field"><b>Category</b><select value={draft.category} onChange={event=>update('category',event.target.value)}>{(kind==='employee'?[['Employee','BT'],['BCBA','BCBA'],['Intern','Intern']]:[['Client/Kid','In-center client'],['Home Client','Home client']]).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+    <label className="field"><b>Category</b><select value={draft.category} onChange={event=>update('category',event.target.value)}>{(kind==='employee'?[['Employee','BT'],['BCBA','BCBA'],['Manager/HR','Manager/HR'],['Intern','Intern']]:[['Client/Kid','In-center client'],['Home Client','Home client']]).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
    </div>
    <div className="schedule-editor-hours-heading"><h3>Weekly hours</h3><span>{formatHours(times.reduce((sum,time)=>sum+time.minutes,0))} hrs total{times.some(time=>!time.valid)?' · check times':''}</span></div>
    <p className="schedule-editor-hint">Leave days empty when not scheduled. Add another time range for a split shift.</p>

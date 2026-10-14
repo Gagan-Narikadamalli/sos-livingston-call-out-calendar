@@ -150,3 +150,9 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .schedule-display-section .schedule-display-notes{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;font-size:12px;line-height:1.4}
 .schedule-sections .schedule-display-section .schedule-row-actions{display:flex;flex-direction:row;align-items:center;gap:6px;min-width:0}
 .schedule-sections .schedule-display-section .schedule-row-actions button{width:auto;flex:1;padding:6px 8px;font-size:12px;line-height:1.3;border-radius:6px;box-shadow:none}
+
+.schedule-section-managerhr{--accent:#946b13;--tint:#fff8d9;border-color:#e6d6a1}
+.schedule-section-managerhr .schedule-section-head{background:linear-gradient(90deg,#fff2ba,#fffcf0 75%)}
+.schedule-section-managerhr .schedule-section-kicker{color:#805b0f}
+.schedule-section-managerhr .schedule-count{background:#946b13}
+.schedule-sections .schedule-section-managerhr .schedule-group-table tbody tr:nth-child(even) td{background:#fffdf4}

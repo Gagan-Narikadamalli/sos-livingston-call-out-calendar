@@ -13,6 +13,7 @@ const DAY_LABELS=['Monday','Tuesday','Wednesday','Thursday','Friday'];
 const employeeSections=[
   {key:'Employee',title:'BT',subtitle:'Weekly schedule for behavior technicians.',tone:'employee'},
   {key:'BCBA',title:'BCBA',subtitle:'Weekly schedule for BCBA team members.',tone:'bcba'},
+  {key:'Manager/HR',title:'Manager/HR',subtitle:'Weekly schedule for managers and HR staff.',tone:'managerhr'},
   {key:'Intern',title:'Interns',subtitle:'Weekly schedule for interns.',tone:'intern'},
 ];
 const clientSections=[
@@ -24,6 +25,7 @@ const normalize=value=>String(value||'').trim().toLowerCase();
 function sectionKey(kind,category){
   const value=normalize(category);
   if(kind==='employee'){
+    if(value.includes('manager')||value==='hr'||value.includes('/hr'))return'Manager/HR';
     if(value.includes('bcba'))return'BCBA';
     if(value.includes('intern'))return'Intern';
     return'Employee';

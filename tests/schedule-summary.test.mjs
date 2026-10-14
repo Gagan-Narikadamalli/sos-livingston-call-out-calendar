@@ -75,3 +75,9 @@ test('four-hour minimum applies to staff and clients for coverage only',()=>{
  assert.equal(days[1].btOnly.staff,0);assert.equal(days[1].coverageClients,0);assert.equal(days[1].btOnly.shortage,0);
  assert.equal(averageBtShortage(days),0.4);
 });
+
+test('Manager/HR contributes to staff hours and roster but not BT or intern coverage',()=>{
+ const row=summarizeSchedules([{category:'Manager/HR',monday:'8-4'},{category:'HR',monday:'8-4'},{category:'Employee',monday:'8-4'}],[{monday:'8-4'}])[0];
+ assert.equal(row.employees,3);assert.equal(row.staffMinutes,1440);assert.equal(row.bt,1);
+ assert.equal(row.btOnly.staff,1);assert.equal(row.withInterns.staff,1);
+});
