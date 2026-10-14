@@ -38,3 +38,52 @@
 .summary-validation h3{margin:0 0 8px}.summary-validation p{margin:0}.summary-validation ul{margin-bottom:0}
 .overall-summary .summary-total-cell{font-weight:800;color:#17305e;background:#edf5fa}
 .overall-summary .summary-total-cell small{display:block;font-size:10px;color:#991b1b}
+
+/* Schedule workspaces use the screen rather than the portal's narrow form layout. */
+main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padding:24px clamp(12px,1.7vw,36px) 80px;min-width:0}
+.grouped-schedule-page .schedule-hero{padding:24px 28px;margin-bottom:20px;border-radius:16px;box-shadow:0 8px 24px #17305e14}
+.grouped-schedule-page .schedule-hero h1{font-size:clamp(24px,2vw,32px);line-height:1.2}
+.grouped-schedule-page .schedule-hero p{font-size:14px;max-width:900px;color:#e8f6fa}
+.grouped-schedule-page .schedule-view-tabs{gap:6px;padding:5px;background:#e6edf4;border:1px solid #d4e0e8;border-radius:12px;width:fit-content;max-width:100%}
+.grouped-schedule-page .schedule-view-tabs button{border-radius:8px;padding:11px 18px;font-size:14px;background:transparent}
+.grouped-schedule-page .schedule-view-tabs button.active{background:#fff;color:#17305e;border-color:transparent;box-shadow:0 2px 8px #17305e15}
+.grouped-schedule-page .schedule-topbar{padding:16px 20px;box-shadow:none}
+.grouped-schedule-page .schedule-topbar h2{font-size:21px}
+.grouped-schedule-page .schedule-topbar p{font-size:13px;line-height:1.5}
+.grouped-schedule-page .schedule-section{border-radius:14px;box-shadow:0 4px 16px #17305e08}
+.grouped-schedule-page .schedule-section-head{border-top-width:4px;padding:18px 20px}
+.grouped-schedule-page .schedule-section-head h2{font-size:23px}
+.grouped-schedule-page .schedule-section-head p{font-size:13px;line-height:1.5}
+.schedule-sections .schedule-group-table{min-width:1260px;table-layout:fixed}
+.schedule-sections .schedule-group-table th,.schedule-sections .schedule-group-table td{padding:12px 9px;vertical-align:top}
+.schedule-sections .schedule-group-table thead th{font-size:12px;font-weight:700;letter-spacing:.02em;padding:14px 9px}
+.schedule-sections .schedule-group-table th:nth-child(1),.schedule-sections .schedule-group-table td:nth-child(1),.schedule-sections .schedule-group-table th:nth-child(2),.schedule-sections .schedule-group-table td:nth-child(2){width:100px!important;min-width:100px}
+.schedule-sections .schedule-group-table th:nth-child(8),.schedule-sections .schedule-group-table td:nth-child(8){width:150px!important}
+.schedule-sections .schedule-group-table th:nth-child(9),.schedule-sections .schedule-group-table td:nth-child(9){width:100px!important}
+.schedule-sections .schedule-group-table tbody td{background:#fff}
+.schedule-sections .schedule-group-table tbody tr:nth-child(even) td{background:#f8fafc}
+.schedule-sections .schedule-group-table input,.schedule-sections .schedule-group-table textarea{border-color:#d0dde7;background:#fff;font-size:13px;min-height:34px}
+.schedule-sections .schedule-group-table textarea.schedule-notes-input{min-height:100px;max-height:200px}
+.schedule-time-input{min-width:140px;gap:7px}
+.schedule-time-range{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 20px;gap:6px 3px;background:#fff;border:1px solid #e0e8ef;border-radius:9px;padding:8px 5px 8px 8px}
+.schedule-time-range label{grid-column:1;display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;gap:4px;font-size:10px;font-weight:700;color:#64748b}
+.schedule-group-table .schedule-time-range input{padding:4px 3px;border-radius:5px;font-size:12px;min-height:30px;height:30px;border:1px solid #dbe4ec;color:#17305e}
+.schedule-time-range .schedule-time-remove{grid-column:2;grid-row:1/span 2;align-self:center;padding:3px 0;background:transparent;font-size:17px;color:#9b6770}
+.schedule-time-input .schedule-time-add{padding:5px 8px;border:1px dashed #bccedc;border-radius:6px;background:transparent;color:#32647b;font-weight:700;justify-self:start}
+.schedule-time-input .schedule-hours{padding:3px 8px;margin:0;border-radius:5px;justify-self:start;background:#eaf5f6;color:#166679;font-size:11px}
+.schedule-time-input>small:last-child{color:#8293a2;font-size:11px}
+.schedule-sections .schedule-row-actions{display:grid;grid-template-columns:1fr;gap:8px;min-width:0}
+.schedule-sections .schedule-row-actions button{width:100%;padding:8px 6px;border-radius:7px;font-size:12px}
+.schedule-sections .schedule-row-actions .danger{background:#fff;color:#a44343;border:1px solid #e9caca}
+.overall-summary .summary-totals{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.overall-summary .summary-stat{padding:22px 24px;box-shadow:none}
+.overall-summary .summary-stat strong{font-size:clamp(30px,2.6vw,44px)}
+.overall-summary .schedule-group-table{min-width:780px}
+.overall-summary .schedule-group-table th,.overall-summary .schedule-group-table td{padding:16px 18px}
+@media(min-width:1600px){.schedule-time-range label{grid-template-columns:34px minmax(0,1fr)}.schedule-group-table .schedule-time-range input{font-size:14px;padding:5px 8px}.schedule-time-input{gap:9px}}
+@media(max-width:1050px){.overall-summary .summary-totals{grid-template-columns:repeat(2,minmax(0,1fr))}.grouped-schedule-page .schedule-hero{padding:22px}.grouped-schedule-page .schedule-topbar-actions input{width:100%}}
+@media(max-width:600px){main.schedule-page.grouped-schedule-page{padding:16px 12px 80px}.grouped-schedule-page .schedule-hero{padding:20px}.grouped-schedule-page .schedule-view-tabs{width:100%}.grouped-schedule-page .schedule-view-tabs button{flex:1 1 130px;padding:10px 12px;font-size:13px}.overall-summary .summary-totals{grid-template-columns:1fr;gap:12px}.overall-summary .summary-stat{padding:18px 20px}.grouped-schedule-page .schedule-topbar{padding:14px}.grouped-schedule-page .schedule-section-head{padding:16px}}
+
+.schedule-sections .schedule-group-table th:nth-child(1),.schedule-sections .schedule-group-table td:nth-child(1){position:sticky;left:0;z-index:2}
+.schedule-sections .schedule-group-table th:nth-child(2),.schedule-sections .schedule-group-table td:nth-child(2){position:sticky;left:100px;z-index:2;box-shadow:3px 0 5px #17305e08}
+.schedule-sections .schedule-group-table thead th:nth-child(-n+2){z-index:3}
