@@ -2,6 +2,7 @@
 
 import {useEffect,useMemo,useState} from 'react';
 import Brand from './Brand';
+import OverallScheduleSummary from './OverallScheduleSummary';
 import {apiRequest} from '../../lib/client-api';
 
 const DAY_FIELDS=['monday','tuesday','wednesday','thursday','friday'];
@@ -58,6 +59,7 @@ export default function ScheduleWorkspace({manager=false,location}){
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
     if(params.get('view')==='client')setKind('client');
+    if(manager&&params.get('view')==='summary')setKind('summary');
   },[]);
 
   useEffect(()=>{
@@ -67,7 +69,7 @@ export default function ScheduleWorkspace({manager=false,location}){
   },[loginUrl]);
 
   useEffect(()=>{
-    if(auth)loadRows(kind);
+    if(auth&&kind!=='summary')loadRows(kind);
   },[auth,kind]);
 
   const sections=kind==='employee'?employeeSections:clientSections;
@@ -191,8 +193,10 @@ export default function ScheduleWorkspace({manager=false,location}){
       <div className="schedule-view-tabs" role="tablist" aria-label="Schedule type">
         <button className={kind==='employee'?'active':''} type="button" onClick={()=>switchKind('employee')}>Employee Schedule</button>
         <button className={kind==='client'?'active':''} type="button" onClick={()=>switchKind('client')}>Clients / Kids Schedule</button>
+        {manager&&<button className={kind==='summary'?'active':''} type="button" onClick={()=>switchKind('summary')}>Overall Summary</button>}
       </div>
 
+      {manager&&kind==='summary'?<OverallScheduleSummary onUnauthorized={()=>setAuth(false)}/>:<>
       <div className="schedule-topbar">
         <div>
           <h2>{kind==='employee'?'Employee Schedule':'Clients / Kids Schedule'}</h2>
@@ -226,6 +230,7 @@ export default function ScheduleWorkspace({manager=false,location}){
           />;
         })}
       </div>
+      </>}
     </main>
   </PageShell>;
 }

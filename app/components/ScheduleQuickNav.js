@@ -17,6 +17,7 @@ export default function ScheduleQuickNav(){
       <a className={!onSchedules?'active':''} href={base}>Livingston Calendar</a>
       <a href={`${base}/schedules?view=employee`}>Employee Schedule</a>
       <a href={`${base}/schedules?view=client`}>Clients / Kids Schedule</a>
+      {isManager&&onSchedules&&<a href={`${base}/schedules?view=summary`}>Overall Summary</a>}
     </nav>
   </details>;
 }
