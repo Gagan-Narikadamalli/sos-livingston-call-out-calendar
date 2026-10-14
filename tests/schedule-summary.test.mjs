@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {hasScheduledHours,summarizeSchedules,averageDailyMetrics,averageBtShortage,invalidScheduleEntries} from '../lib/schedule-summary.mjs';
+import {hasScheduledHours,qualifiesForCoverage,summarizeSchedules,averageDailyMetrics,averageBtShortage,invalidScheduleEntries} from '../lib/schedule-summary.mjs';
 import {parseScheduleTime,normalizedScheduleTime,serializeRanges} from '../lib/schedule-time.mjs';
 test('blank/off days are not availability; malformed times are flagged',()=>{
  for(const value of ['',null,'  ','Off','N/A','—','---','PTO','not working'])assert.equal(hasScheduledHours(value),false);
@@ -58,4 +58,20 @@ test('daily averages include all five days and every count and hours column',()=
  const days=summarizeSchedules([{category:'Employee',monday:'8-4'},{category:'Intern',monday:'9-12',tuesday:'9-12'}],[{monday:'8-4',tuesday:'8-4'}]);
  assert.deepEqual(averageDailyMetrics(days),{bt:0.2,bcba:0,interns:0.4,clients:0.4,btMinutes:96,bcbaMinutes:0,internMinutes:72,staffMinutes:168,clientMinutes:192});
  assert.equal(averageDailyMetrics([]).staffMinutes,0);
+});
+
+test('four-hour minimum applies to staff and clients for coverage only',()=>{
+ for(const value of ['', '8-11', '08:00 AM - 11:59 AM', 'bad'])assert.equal(qualifiesForCoverage(value),false);
+ assert.equal(qualifiesForCoverage('8-12'),true);
+ assert.equal(qualifiesForCoverage('9-11;1-3'),true);
+ const employees=[{category:'Employee',monday:'8-12',tuesday:'8-11'},{category:'Employee',monday:'8-11'},{category:'Intern',monday:'8-12'},{category:'Intern',monday:'8-11'},{category:'BCBA',monday:'8-5'}];
+ const clients=[{monday:'8-12',tuesday:'8-11'},{monday:'8-12'},{monday:'8-11'},{category:'Home Client',monday:'8-5'}];
+ const days=summarizeSchedules(employees,clients),monday=days[0];
+ assert.equal(monday.employees,5);assert.equal(monday.clients,3);
+ assert.equal(monday.staffMinutes,1380);assert.equal(monday.clientMinutes,660);
+ assert.equal(monday.coverageClients,2);
+ assert.deepEqual(monday.btOnly,{staff:1,callOuts:1,remaining:0,shortage:2,surplus:0});
+ assert.deepEqual(monday.withInterns,{staff:2,callOuts:1,remaining:1,shortage:1,surplus:0});
+ assert.equal(days[1].btOnly.staff,0);assert.equal(days[1].coverageClients,0);assert.equal(days[1].btOnly.shortage,0);
+ assert.equal(averageBtShortage(days),0.4);
 });
