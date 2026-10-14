@@ -2,6 +2,7 @@
 
 import {useEffect,useMemo,useState} from 'react';
 import Brand from './Brand';
+import ScheduleExportButton from './ScheduleExportButton';
 import ScheduleEditor from './ScheduleEditor';
 import {parseScheduleTime,normalizedScheduleTime} from '../../lib/schedule-time.mjs';
 import OverallScheduleSummary from './OverallScheduleSummary';
@@ -217,13 +218,14 @@ export default function ScheduleWorkspace({manager=false,location}){
         {manager&&<button className={kind==='summary'?'active':''} type="button" onClick={()=>switchKind('summary')}>Overall Summary</button>}
       </div>
 
-      {manager&&kind==='summary'?<OverallScheduleSummary onUnauthorized={()=>setAuth(false)}/>:<>
+      {manager&&kind==='summary'?<OverallScheduleSummary location={location} onUnauthorized={()=>setAuth(false)}/>:<>
       <div className="schedule-topbar">
         <div>
           <h2>{kind==='employee'?'Employee Schedule':'Clients / Kids Schedule'}</h2>
           <p>{loading?'Refreshing schedule…':`${rows.length} total ${kind==='employee'?'staff member(s)':'client/kid(s)'}`}</p>
         </div>
         <div className="schedule-topbar-actions">
+          <ScheduleExportButton kind={kind} employees={kind==='employee'?rows:[]} clients={kind==='client'?rows:[]} location={location} disabled={loading||busy}/>
           <input aria-label="Search schedule" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search name, hours, notes…"/>
           {manager&&<button type="button" className="danger schedule-clear-all" disabled={busy||loading} onClick={clearSchedule}>Clear Entire Schedule</button>}
         </div>

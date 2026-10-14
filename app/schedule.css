@@ -156,3 +156,7 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .schedule-section-managerhr .schedule-section-kicker{color:#805b0f}
 .schedule-section-managerhr .schedule-count{background:#946b13}
 .schedule-sections .schedule-section-managerhr .schedule-group-table tbody tr:nth-child(even) td{background:#fffdf4}
+
+.schedule-export-control{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.schedule-export-button{background:#14778c;color:#fff;white-space:nowrap}
+.schedule-export-error{font-size:12px;color:#991b1b;max-width:260px}

@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
+import ScheduleExportButton from './ScheduleExportButton';
 import {apiRequest} from '../../lib/client-api';
 import {summarizeSchedules,averageDailyMetrics,averageBtShortage,invalidScheduleEntries,isCenterClient} from '../../lib/schedule-summary.mjs';
 import {WEEKDAYS,DAY_NAMES,parseScheduleTime,formatHours,scheduleCategory} from '../../lib/schedule-time.mjs';
@@ -15,7 +16,7 @@ function CoverageSection({days,includeInterns=false}){
  {days.map(row=><tr key={row.day}><th scope="row">{dayName(row.day)}</th><td>{row[key].staff}</td><td>{row.coverageClients}</td><td>{row[key].callOuts}</td><td>{row[key].remaining}</td><td><Shortage value={row[key].shortage}/></td><td>{row[key].surplus}</td></tr>)}
  </SummaryTable></section>;
 }
-export default function OverallScheduleSummary({onUnauthorized}){
+export default function OverallScheduleSummary({onUnauthorized,location}){
  const [data,setData]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[refresh,setRefresh]=useState(0);
  useEffect(()=>{
   let active=true;
@@ -30,7 +31,7 @@ export default function OverallScheduleSummary({onUnauthorized}){
  const average=averageDailyMetrics(days);
  const invalid=data?invalidScheduleEntries(data.employees,data.clients):[];
  return <section className="overall-summary" aria-busy={loading}>
- <div className="schedule-topbar"><div><h2>Overall Summary</h2><p>Weekly attendance, working hours, and BT coverage from saved schedules.</p></div><button type="button" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>Refresh Summary</button></div>
+ <div className="schedule-topbar"><div><h2>Overall Summary</h2><p>Weekly attendance, working hours, and BT coverage from saved schedules.</p></div><div className="schedule-topbar-actions"><ScheduleExportButton kind="summary" employees={data?.employees||[]} clients={data?.clients||[]} location={location} disabled={loading||!data}/><button type="button" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>Refresh Summary</button></div></div>
  {loading&&<p role="status">Loading staff and client schedules…</p>}{error&&<p className="message error-message" role="alert">Could not load summary: {error}</p>}
  {data&&<>
  <div className="summary-totals summary-totals-with-clients">
