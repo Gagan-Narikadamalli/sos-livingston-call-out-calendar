@@ -3,7 +3,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import Brand from './Brand';
 import ScheduleEditor from './ScheduleEditor';
-import {parseScheduleTime,normalizedScheduleTime,formatHours} from '../../lib/schedule-time.mjs';
+import {parseScheduleTime,normalizedScheduleTime} from '../../lib/schedule-time.mjs';
 import OverallScheduleSummary from './OverallScheduleSummary';
 import {apiRequest} from '../../lib/client-api';
 
@@ -294,8 +294,8 @@ function ScheduleRow({row,manager,editRow,busy,deleteRow}){
   return <tr>
     <td><span className="schedule-person-name">{row.first_name||'—'}</span></td>
     <td><span>{row.last_name||'—'}</span></td>
-    {DAY_FIELDS.map(day=>{const time=parseScheduleTime(row[day]);return <td key={day}><div className="schedule-display-time"><span>{time.valid?normalizedScheduleTime(row[day])||'—':row[day]}</span>{time.valid&&time.minutes>0&&<small className="schedule-hours">{formatHours(time.minutes)} hrs</small>}{!time.valid&&<small className="schedule-time-error">Needs correction</small>}</div></td>;})}
-    <td><span className="schedule-display-notes">{row.notes||'—'}</span></td>
+    {DAY_FIELDS.map(day=>{const time=parseScheduleTime(row[day]);return <td key={day}><div className="schedule-display-time">{time.valid?(normalizedScheduleTime(row[day])?normalizedScheduleTime(row[day]).split('; ').map((range,index)=><span key={index}>{range.replace(/\b0(?=\d:)/g,'').replace(' - ',' – ')}</span>):<span>—</span>):<span title={row[day]}>{row[day]}</span>}{!time.valid&&<small className="schedule-time-error">Needs correction</small>}</div></td>;})}
+    <td><span className="schedule-display-notes" title={row.notes||''}>{row.notes||'—'}</span></td>
     {manager&&<td><div className="schedule-row-actions"><button type="button" disabled={busy} onClick={()=>editRow(row)}>Edit</button><button type="button" className="danger" disabled={busy} onClick={()=>deleteRow(row)}>Delete</button></div></td>}
   </tr>;
 }
