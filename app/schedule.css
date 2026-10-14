@@ -163,3 +163,6 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 
 .schedule-sections .schedule-display-section .schedule-group-table tbody tr td.schedule-off-cell{background:#999999!important;border-color:#8793a0}
 .schedule-off-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+.calendar-filter-export{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:700px){.calendar-filter-export{justify-content:flex-start;width:100%}}

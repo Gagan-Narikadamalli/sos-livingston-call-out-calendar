@@ -2,6 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react';
 import Brand from '../components/Brand';
+import CalendarExportButton from '../components/CalendarExportButton';
 import CalendarFilters from '../components/CalendarFilters';
 import {apiRequest} from '../../lib/client-api';
 
@@ -51,6 +52,7 @@ export default function TeamCalendar(){
   const [notes,setNotes]=useState([]);
   const [message,setMessage]=useState('');
   const [activeFilter,setActiveFilter]=useState('');
+  const [loadedMonth,setLoadedMonth]=useState('');
   const [,setClock]=useState(Date.now());
   const loadId=useRef(0);
 
@@ -80,6 +82,7 @@ export default function TeamCalendar(){
       if(current!==loadId.current)return;
       setEntries(data.entries);
       setNotes(data.notes);
+      setLoadedMonth(monthKey(month));
     }catch(error){
       if(current!==loadId.current)return;
       if(error.status===401)setAuthenticated(false);
@@ -155,7 +158,7 @@ export default function TeamCalendar(){
 
       <div className="calendar-controls">
         <div className="legend"><i className="recent"/>New in last 24 hours <i className="employee"/>Employee note <i className="parent-note"/>Parent/Client note <i className="note"/>Manager note</div>
-        <CalendarFilters value={activeFilter} onChange={setActiveFilter}/>
+        <div className="calendar-filter-export"><CalendarFilters value={activeFilter} onChange={setActiveFilter}/><CalendarExportButton month={monthKey(month)} location={LOCATION} entries={entries.filter(entry=>entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))} notes={notes.filter(note=>noteMatchesFilter(note,activeFilter))} filterLabel={activeFilter?`${activeFilter} filter`:'All calendar events'} disabled={loadedMonth!==monthKey(month)}/></div>
       </div>
 
       <div className="week">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><b key={day}>{day}</b>)}</div>
