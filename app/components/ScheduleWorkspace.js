@@ -2,7 +2,7 @@
 
 import {useEffect,useMemo,useState} from 'react';
 import Brand from './Brand';
-import ScheduleTimeInput from './ScheduleTimeInput';
+import ScheduleEditor from './ScheduleEditor';
 import {parseScheduleTime,normalizedScheduleTime,formatHours} from '../../lib/schedule-time.mjs';
 import OverallScheduleSummary from './OverallScheduleSummary';
 import {apiRequest} from '../../lib/client-api';
@@ -57,6 +57,17 @@ export default function ScheduleWorkspace({manager=false,location}){
   const [message,setMessage]=useState('');
   const [loading,setLoading]=useState(false);
   const [search,setSearch]=useState('');
+  const [editing,setEditing]=useState(null);
+  const [toast,setToast]=useState(null);
+  const [busy,setBusy]=useState(false);
+
+  useEffect(()=>{
+    if(!toast)return;
+    const timer=setTimeout(()=>setToast(null),3000);
+    return()=>clearTimeout(timer);
+  },[toast]);
+
+  function notify(text){setMessage('');setToast({text,id:Date.now()});}
 
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
@@ -111,68 +122,69 @@ export default function ScheduleWorkspace({manager=false,location}){
     window.history.replaceState(null,'',`${base}?view=${next}`);
   }
 
-  function updateRow(id,field,value){
-    setRows(current=>current.map(row=>row.id===id?{...row,[field]:value}:row));
-  }
-
   function addRow(category){
-    setRows(current=>[...current,blankRow(category)]);
+    setEditing(blankRow(category));
     setMessage('');
   }
 
   async function saveRow(row){
-    if(!String(row.first_name||'').trim())return setMessage('Enter a first name before saving.');
+    if(!String(row.first_name||'').trim())throw new Error('Enter a first name before saving.');
     for(const day of DAY_FIELDS){
       const time=parseScheduleTime(row[day]);
-      if(!time.valid)return setMessage(`${day[0].toUpperCase()+day.slice(1)}: ${time.error}`);
+      if(!time.valid)throw new Error(`${day[0].toUpperCase()+day.slice(1)}: ${time.error}`);
     }
     const hours=Object.fromEntries(DAY_FIELDS.map(day=>[day,normalizedScheduleTime(row[day])]));
-    try{
-      const canonicalCategory=sectionKey(kind,row.category);
-      const saved=await apiRequest('/api/schedules',{
-        method:row._new?'POST':'PATCH',
-        headers:{'content-type':'application/json'},
-        body:JSON.stringify({...row,...hours,category:canonicalCategory,kind}),
-      });
-      setRows(current=>current.map(item=>item.id===row.id?saved:item));
-      setMessage(`${row.first_name}${row.last_name?' '+row.last_name:''} saved successfully.`);
-    }catch(error){setMessage(error.message);}
+    const canonicalCategory=sectionKey(kind,row.category);
+    const saved=await apiRequest('/api/schedules',{
+      method:row._new?'POST':'PATCH',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({...row,...hours,category:canonicalCategory,kind}),
+    });
+    setRows(current=>row._new?[...current,saved]:current.map(item=>item.id===row.id?saved:item));
+    setEditing(null);
+    notify(`${row.first_name}${row.last_name?' '+row.last_name:''} ${row._new?'added':'saved'} successfully.`);
   }
 
   async function deleteRow(row){
+    if(busy)return;
     if(row._new){
       setRows(current=>current.filter(item=>item.id!==row.id));
-      setMessage('Unsaved entry removed.');
+      notify('Unsaved entry removed.');
       return;
     }
     if(!confirm(`Delete ${row.first_name}${row.last_name?' '+row.last_name:''} from this schedule?`))return;
+    setBusy(true);
     try{
       await apiRequest(`/api/schedules?kind=${kind}&id=${row.id}`,{method:'DELETE'});
       setRows(current=>current.filter(item=>item.id!==row.id));
-      setMessage('Schedule entry deleted.');
-    }catch(error){setMessage(error.message);}
+      notify('Schedule entry deleted successfully.');
+    }catch(error){setMessage(error.message);}finally{setBusy(false);}
   }
 
   async function deleteSection(section){
+    if(busy)return;
     const sectionRows=rows.filter(row=>sectionKey(kind,row.category)===section.key);
     if(!sectionRows.length)return setMessage(`${section.title} is already empty.`);
     if(!confirm(`Delete ALL ${sectionRows.length} entr${sectionRows.length===1?'y':'ies'} from ${section.title}? This cannot be undone.`))return;
+    setBusy(true);
     try{
       await apiRequest(`/api/schedules?kind=${kind}&scope=section&category=${encodeURIComponent(section.key)}`,{method:'DELETE'});
       setRows(current=>current.filter(row=>sectionKey(kind,row.category)!==section.key));
-      setMessage(`All entries in ${section.title} were deleted.`);
-    }catch(error){setMessage(error.message);}
+      notify(`All entries in ${section.title} were deleted successfully.`);
+    }catch(error){setMessage(error.message);}finally{setBusy(false);}
   }
 
   async function clearSchedule(){
+    if(busy)return;
     if(!rows.length)return setMessage('This schedule is already empty.');
     const title=kind==='employee'?'Employee Schedule':'Clients / Kids Schedule';
     if(!confirm(`Delete ALL ${rows.length} entries from the ${title}? This clears every section and cannot be undone.`))return;
+    setBusy(true);
     try{
       await apiRequest(`/api/schedules?kind=${kind}&scope=all`,{method:'DELETE'});
       setRows([]);
-      setMessage(`${title} cleared.`);
-    }catch(error){setMessage(error.message);}
+      notify(`${title} cleared successfully.`);
+    }catch(error){setMessage(error.message);}finally{setBusy(false);}
   }
 
   if(auth===null)return <PageShell location={location} manager={manager}><main className="schedule-page"><section className="card schedule-status"><h1>Loading schedule…</h1></section></main></PageShell>;
@@ -192,7 +204,7 @@ export default function ScheduleWorkspace({manager=false,location}){
         <div>
           <span className="schedule-eyebrow">{manager?'MANAGER SCHEDULE CENTER':'READ-ONLY TEAM SCHEDULE'}</span>
           <h1>{location} Weekly Schedules</h1>
-          <p>{manager?'Add staff and clients directly to the correct section, then update their weekly hours whenever the schedule changes.':'This is the current weekly reference schedule. Schedule changes are made only from the manager view.'}</p>
+          <p>{manager?'View weekly schedules at a glance. Choose Edit to update details or Add to create a new schedule.':'This is the current weekly reference schedule. Schedule changes are made only from the manager view.'}</p>
         </div>
         <span className={`schedule-mode ${manager?'manager-mode':'readonly-mode'}`}>{manager?'EDITABLE':'READ ONLY'}</span>
       </section>
@@ -211,7 +223,7 @@ export default function ScheduleWorkspace({manager=false,location}){
         </div>
         <div className="schedule-topbar-actions">
           <input aria-label="Search schedule" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search name, hours, notes…"/>
-          {manager&&<button type="button" className="danger schedule-clear-all" onClick={clearSchedule}>Clear Entire Schedule</button>}
+          {manager&&<button type="button" className="danger schedule-clear-all" disabled={busy||loading} onClick={clearSchedule}>Clear Entire Schedule</button>}
         </div>
       </div>
 
@@ -229,8 +241,8 @@ export default function ScheduleWorkspace({manager=false,location}){
             totalCount={allSectionRows.length}
             manager={manager}
             kind={kind}
-            updateRow={updateRow}
-            saveRow={saveRow}
+            editRow={row=>setEditing({...row})}
+            busy={busy||loading}
             deleteRow={deleteRow}
             deleteSection={deleteSection}
             addRow={addRow}
@@ -239,12 +251,14 @@ export default function ScheduleWorkspace({manager=false,location}){
       </div>
       </>}
     </main>
+    {manager&&editing&&<ScheduleEditor row={editing} kind={kind} onSave={saveRow} onClose={()=>setEditing(null)}/>}
+    {toast&&<div className="schedule-toast" role="status" aria-live="polite"><span aria-hidden="true">✓</span>{toast.text}</div>}
   </PageShell>;
 }
 
-function ScheduleSection({section,rows,totalCount,manager,kind,updateRow,saveRow,deleteRow,deleteSection,addRow}){
+function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,deleteRow,deleteSection,addRow}){
   const noun=kind==='employee'?'Staff Member':'Client / Kid';
-  return <section className={`schedule-section schedule-section-${section.tone}`}>
+  return <section className={`schedule-section schedule-section-${section.tone} schedule-display-section`}>
     <div className="schedule-section-head">
       <div>
         <span className="schedule-section-kicker">{kind==='employee'?'STAFF':'CLIENTS / KIDS'}</span>
@@ -253,8 +267,8 @@ function ScheduleSection({section,rows,totalCount,manager,kind,updateRow,saveRow
       </div>
       <div className="schedule-section-actions">
         <span className="schedule-count">{totalCount}</span>
-        {manager&&<button type="button" onClick={()=>addRow(section.key)}>+ Add {noun}</button>}
-        {manager&&totalCount>0&&<button type="button" className="danger schedule-delete-section" onClick={()=>deleteSection(section)}>Delete All in Section</button>}
+        {manager&&<button type="button" disabled={busy} onClick={()=>addRow(section.key)}>+ Add {noun}</button>}
+        {manager&&totalCount>0&&<button type="button" className="danger schedule-delete-section" disabled={busy} onClick={()=>deleteSection(section)}>Delete All in Section</button>}
       </div>
     </div>
 
@@ -269,24 +283,20 @@ function ScheduleSection({section,rows,totalCount,manager,kind,updateRow,saveRow
         </tr></thead>
         <tbody>
           {!rows.length&&<tr><td className="schedule-empty" colSpan={manager?9:8}>{manager?'No entries shown. Use Add to create one.':'No entries in this section.'}</td></tr>}
-          {rows.map(row=><ScheduleRow key={row.id} row={row} manager={manager} updateRow={updateRow} saveRow={saveRow} deleteRow={deleteRow}/>) }
+          {rows.map(row=><ScheduleRow key={row.id} row={row} manager={manager} editRow={editRow} busy={busy} deleteRow={deleteRow}/>) }
         </tbody>
       </table>
     </div>
   </section>;
 }
 
-function ScheduleRow({row,manager,updateRow,saveRow,deleteRow}){
-  const textCell=field=>manager
-    ?<input value={row[field]||''} onChange={event=>updateRow(row.id,field,event.target.value)}/>
-    :<span>{row[field]||'—'}</span>;
-
+function ScheduleRow({row,manager,editRow,busy,deleteRow}){
   return <tr>
-    <td>{textCell('first_name')}</td>
-    <td>{textCell('last_name')}</td>
-    {DAY_FIELDS.map(day=>{const time=parseScheduleTime(row[day]);return <td key={day}>{manager?<ScheduleTimeInput value={row[day]||''} onChange={value=>updateRow(row.id,day,value)} label={`${row.first_name||'Schedule'} ${day}`}/>:<div><span>{time.valid?normalizedScheduleTime(row[day])||'—':row[day]}</span>{time.valid&&time.minutes>0&&<small className="schedule-hours">{formatHours(time.minutes)} hrs</small>}</div>}</td>;})}
-    <td>{manager?<textarea className="schedule-notes-input" value={row.notes||''} onChange={event=>updateRow(row.id,'notes',event.target.value)}/>:<span>{row.notes||'—'}</span>}</td>
-    {manager&&<td><div className="schedule-row-actions"><button type="button" onClick={()=>saveRow(row)}>Save</button><button type="button" className="danger" onClick={()=>deleteRow(row)}>Delete</button></div></td>}
+    <td><span className="schedule-person-name">{row.first_name||'—'}</span></td>
+    <td><span>{row.last_name||'—'}</span></td>
+    {DAY_FIELDS.map(day=>{const time=parseScheduleTime(row[day]);return <td key={day}><div className="schedule-display-time"><span>{time.valid?normalizedScheduleTime(row[day])||'—':row[day]}</span>{time.valid&&time.minutes>0&&<small className="schedule-hours">{formatHours(time.minutes)} hrs</small>}{!time.valid&&<small className="schedule-time-error">Needs correction</small>}</div></td>;})}
+    <td><span className="schedule-display-notes">{row.notes||'—'}</span></td>
+    {manager&&<td><div className="schedule-row-actions"><button type="button" disabled={busy} onClick={()=>editRow(row)}>Edit</button><button type="button" className="danger" disabled={busy} onClick={()=>deleteRow(row)}>Delete</button></div></td>}
   </tr>;
 }
 
