@@ -32,16 +32,17 @@ export default function OverallScheduleSummary({onUnauthorized}){
  <div className="schedule-topbar"><div><h2>Overall Summary</h2><p>Weekly attendance, working hours, and BT coverage from saved schedules.</p></div><button type="button" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>Refresh Summary</button></div>
  {loading&&<p role="status">Loading staff and client schedules…</p>}{error&&<p className="message error-message" role="alert">Could not load summary: {error}</p>}
  {data&&<>
- <div className="summary-totals">
+ <div className="summary-totals summary-totals-with-clients">
   <div className="card summary-stat summary-stat-staff"><span className="summary-stat-label">STAFF ROSTER</span><h3>Total employees</h3><strong>{data.employees.length}</strong><p>BT, BCBA, and interns</p></div>
   <div className="card summary-stat summary-stat-clients"><span className="summary-stat-label">CLIENT ROSTER</span><h3>Total clients / kids</h3><strong>{data.clients.filter(isCenterClient).length}</strong><p>In-center schedules</p></div>
   <div className="card summary-stat summary-stat-coverage"><span className="summary-stat-label">BT ONLY · 10% CALL-OUTS</span><h3>Average BT shortage</h3><strong>{decimal(averageBtShortage(days))}</strong><p>Monday–Friday, including zero-shortage days</p></div>
   <div className="card summary-stat"><span className="summary-stat-label">WEEKLY HOURS</span><h3>Total staff hours</h3><strong>{formatHours(days.reduce((sum,row)=>sum+row.staffMinutes,0))}</strong><p>BT, BCBA, and intern scheduled hours</p></div>
+  <div className="card summary-stat summary-stat-clients"><span className="summary-stat-label">WEEKLY CLIENT HOURS</span><h3>Total client hours</h3><strong>{formatHours(days.reduce((sum,row)=>sum+row.clientMinutes,0))}</strong><p>In-center client scheduled hours</p></div>
  </div>
  {invalid.length>0&&<div className="summary-validation" role="alert"><h3>Schedule times need correction</h3><p>These entries are excluded from daily counts and hours until corrected in the schedule sheet.</p><ul>{invalid.map((item,index)=><li key={`${item.id}-${item.day}-${index}`}>{item.name} · {dayName(item.day)}: {item.value}</li>)}</ul></div>}
  <section className="schedule-section"><div className="schedule-section-head"><div><h3>Daily staff, clients, and hours</h3><p>Blank days count as not scheduled. Working hours are the sum of entered time ranges.</p></div></div>
- <SummaryTable headers={['Day','BT','BCBA','Interns','Clients','BT hours','BCBA hours','Intern hours','Total staff hours']}>
- {days.map(row=><tr key={row.day}><th scope="row">{dayName(row.day)}</th><td>{row.bt}</td><td>{row.bcba}</td><td>{row.interns}</td><td>{row.clients}</td><td>{formatHours(row.btMinutes)}</td><td>{formatHours(row.bcbaMinutes)}</td><td>{formatHours(row.internMinutes)}</td><td className="summary-total-cell">{formatHours(row.staffMinutes)}</td></tr>)}
+ <SummaryTable headers={['Day','BT','BCBA','Interns','Clients','BT hours','BCBA hours','Intern hours','Total staff hours','Total client hours']}>
+ {days.map(row=><tr key={row.day}><th scope="row">{dayName(row.day)}</th><td>{row.bt}</td><td>{row.bcba}</td><td>{row.interns}</td><td>{row.clients}</td><td>{formatHours(row.btMinutes)}</td><td>{formatHours(row.bcbaMinutes)}</td><td>{formatHours(row.internMinutes)}</td><td className="summary-total-cell">{formatHours(row.staffMinutes)}</td><td className="summary-total-cell">{formatHours(row.clientMinutes)}</td></tr>)}
  </SummaryTable></section>
  <CoverageSection days={days}/><CoverageSection days={days} includeInterns/>
  <section className="schedule-section"><div className="schedule-section-head"><div><h3>Hours per staff member</h3><p>Daily and weekly scheduled working hours for each employee.</p></div></div>

@@ -87,3 +87,8 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .schedule-sections .schedule-group-table th:nth-child(1),.schedule-sections .schedule-group-table td:nth-child(1){position:sticky;left:0;z-index:2}
 .schedule-sections .schedule-group-table th:nth-child(2),.schedule-sections .schedule-group-table td:nth-child(2){position:sticky;left:100px;z-index:2;box-shadow:3px 0 5px #17305e08}
 .schedule-sections .schedule-group-table thead th:nth-child(-n+2){z-index:3}
+
+.overall-summary .summary-totals-with-clients{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1300px){.overall-summary .summary-totals-with-clients{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.overall-summary .summary-totals-with-clients{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.overall-summary .summary-totals-with-clients{grid-template-columns:1fr}}

@@ -45,3 +45,11 @@ test('bad saved entries are excluded and listed for correction',()=>{
  assert.equal(summarizeSchedules(employees,clients)[0].employees,0);
  assert.deepEqual(invalidScheduleEntries(employees,clients),[{id:1,name:'Staff',day:'monday',value:'8:12:00'}]);
 });
+
+test('client hours total split shifts by day, excluding home, blank and malformed entries',()=>{
+ const days=summarizeSchedules([], [{category:'Client/Kid',monday:'9-12;1-5',tuesday:'8-4'}, {category:'Client/Kid',monday:'8:30-12:30'}, {category:'Home Client',monday:'9-5'}, {category:'Client/Kid',monday:'bad',tuesday:''}]);
+ assert.equal(days[0].clientMinutes,660);
+ assert.equal(days[1].clientMinutes,480);
+ assert.equal(days[2].clientMinutes,0);
+ assert.equal(days.reduce((total,day)=>total+day.clientMinutes,0),1140);
+});
