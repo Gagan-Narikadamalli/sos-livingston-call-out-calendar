@@ -85,7 +85,7 @@ async function handlePOST(req){
       monday,tuesday,wednesday,thursday,friday,notes,day_colors,display_order
     ) values(
       ${kind},${row.category},${row.first_name},${row.last_name||''},${row.assigned_to||''},
-      ${row.monday||''},${row.tuesday||''},${row.wednesday||''},${row.thursday||''},${row.friday||''},${row.notes||''},${JSON.stringify(row.day_colors)}::jsonb,${Number(maxRows[0]?.next||0)}
+      ${row.monday||''},${row.tuesday||''},${row.wednesday||''},${row.thursday||''},${row.friday||''},${row.notes||''},${sql.json(row.day_colors)},${Number(maxRows[0]?.next||0)}
     ) returning *
   `;
   return NextResponse.json(created[0]);
@@ -106,7 +106,7 @@ async function handlePATCH(req){
     update weekly_schedules set
       category=${row.category},first_name=${row.first_name},last_name=${row.last_name||''},assigned_to=${row.assigned_to||''},
       monday=${row.monday||''},tuesday=${row.tuesday||''},wednesday=${row.wednesday||''},thursday=${row.thursday||''},friday=${row.friday||''},
-      notes=${row.notes||''},day_colors=coalesce(${body.day_colors===undefined?null:JSON.stringify(row.day_colors)}::jsonb,day_colors),updated_at=now()
+      notes=${row.notes||''},day_colors=coalesce(${body.day_colors===undefined?null:sql.json(row.day_colors)},day_colors),updated_at=now()
     where id=${id} and schedule_kind=${kind}
     returning *
   `;

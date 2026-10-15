@@ -8,3 +8,10 @@ test('reset, old records and invalid values use default text color',()=>{
  for(const value of [undefined,null,[],{},'bad'])assert.deepEqual(normalizeDayColors(value),{});
  assert.deepEqual(normalizeDayColors({monday:'',tuesday:'#17305e'}),{});
 });
+
+test('colors survive legacy JSON-string storage and a save/reload round trip',()=>{
+ const colors={monday:'#800000',friday:'#800000'};
+ assert.deepEqual(normalizeDayColors(JSON.stringify(colors)),colors);
+ assert.deepEqual(normalizeDayColors(JSON.parse(JSON.stringify(colors))),colors);
+ assert.deepEqual(normalizeDayColors('null'),{});
+});
