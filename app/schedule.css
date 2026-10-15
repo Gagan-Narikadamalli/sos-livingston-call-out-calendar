@@ -167,9 +167,20 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .calendar-filter-export{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:700px){.calendar-filter-export{justify-content:flex-start;width:100%}}
 
-.schedule-display-time.schedule-outlier-day>span{font-weight:800}
+
 .calendar-export-range{display:grid;gap:6px;max-width:100%}
 .calendar-export-inputs{display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px}
 .calendar-export-inputs label{display:grid;gap:5px;font-size:11px;font-weight:700;color:#607687}
 .calendar-export-inputs input{padding:8px 10px;border:1px solid #cbd9e4;border-radius:8px;background:#fff;color:#17305e;font:inherit;font-size:13px;min-height:38px}
 @media(max-width:600px){.calendar-export-inputs label{flex:1;min-width:130px}.calendar-export-inputs button{width:100%}}
+
+.schedule-editor-day-title{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.schedule-editor-day-title h4{margin:0}
+.schedule-font-control{display:flex;align-items:center;gap:4px}
+.schedule-font-control>button{width:25px;height:25px;padding:0;border:1px solid #cbd9e4;border-radius:5px;background:#fff;box-shadow:none;font-size:14px}
+.schedule-font-control>button.active{background:#fae8ed;border-color:#800000}
+.schedule-font-control>button span{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px}
+.schedule-font-control label{display:flex;align-items:center}
+.schedule-editor .schedule-font-control input[type=color]{width:25px;height:25px;padding:2px;border:1px solid #cbd9e4;border-radius:5px;cursor:pointer}
+.schedule-color-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.schedule-editor .schedule-colored-input input[type=time]{color:var(--time-color);font-weight:400}

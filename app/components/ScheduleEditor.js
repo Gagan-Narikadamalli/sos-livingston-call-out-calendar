@@ -1,10 +1,12 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import ScheduleTimeInput from './ScheduleTimeInput';
+import ScheduleFontControl from './ScheduleFontControl';
+import {normalizeDayColors,DEFAULT_TIME_COLOR} from '../../lib/schedule-colors.mjs';
 import {WEEKDAYS,DAY_NAMES,parseScheduleTime,formatHours} from '../../lib/schedule-time.mjs';
 
 export default function ScheduleEditor({row,kind,onSave,onClose}){
- const [draft,setDraft]=useState({...row});
+ const [draft,setDraft]=useState({...row,day_colors:normalizeDayColors(row.day_colors)});
  const [error,setError]=useState('');
  const [saving,setSaving]=useState(false);
  const dialog=useRef(null);
@@ -33,7 +35,7 @@ export default function ScheduleEditor({row,kind,onSave,onClose}){
    </div>
    <div className="schedule-editor-hours-heading"><h3>Weekly hours</h3><span>{formatHours(times.reduce((sum,time)=>sum+time.minutes,0))} hrs total{times.some(time=>!time.valid)?' · check times':''}</span></div>
    <p className="schedule-editor-hint">Leave days empty when not scheduled. Add another time range for a split shift.</p>
-   <div className="schedule-editor-days">{WEEKDAYS.map((day,index)=><section className="schedule-editor-day" key={day}><h4>{DAY_NAMES[index]}</h4><ScheduleTimeInput value={draft[day]||''} onChange={value=>update(day,value)} label={`${draft.first_name||noun} ${DAY_NAMES[index]}`}/></section>)}</div>
+   <div className="schedule-editor-days">{WEEKDAYS.map((day,index)=><section className="schedule-editor-day" key={day}><div className="schedule-editor-day-title"><h4>{DAY_NAMES[index]}</h4><ScheduleFontControl day={DAY_NAMES[index]} color={draft.day_colors[day]} onChange={color=>update('day_colors',normalizeDayColors({...draft.day_colors,[day]:color}))}/></div><div className="schedule-colored-input" style={{'--time-color':draft.day_colors[day]||DEFAULT_TIME_COLOR}}><ScheduleTimeInput value={draft[day]||''} onChange={value=>update(day,value)} label={`${draft.first_name||noun} ${DAY_NAMES[index]}`}/></div></section>)}</div>
    <label className="field schedule-editor-notes"><b>Notes</b><textarea rows={3} maxLength={500} value={draft.notes||''} onChange={event=>update('notes',event.target.value)} placeholder="Optional schedule notes"/></label>
   </fieldset>
   <div className="schedule-editor-footer">{error&&<p className="schedule-editor-error" role="alert">{error}</p>}<div><button type="button" className="schedule-editor-cancel" disabled={saving} onClick={onClose}>Cancel</button><button type="submit" disabled={saving}>{saving?'Saving…':row._new?'Save & Add':'Save Changes'}</button></div></div>
