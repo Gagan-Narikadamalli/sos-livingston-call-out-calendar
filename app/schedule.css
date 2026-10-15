@@ -167,7 +167,7 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .calendar-filter-export{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:700px){.calendar-filter-export{justify-content:flex-start;width:100%}}
 
-.schedule-display-time.schedule-short-day>span{font-weight:800}
+.schedule-display-time.schedule-outlier-day>span{font-weight:800}
 .calendar-export-range{display:grid;gap:6px;max-width:100%}
 .calendar-export-inputs{display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px}
 .calendar-export-inputs label{display:grid;gap:5px;font-size:11px;font-weight:700;color:#607687}
