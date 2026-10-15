@@ -227,7 +227,7 @@ export default function ScheduleWorkspace({manager=false,location}){
           <p>{loading?'Refreshing schedule…':`${rows.length} total ${kind==='employee'?'staff member(s)':'client/kid(s)'}`}</p>
         </div>
         <div className="schedule-topbar-actions">
-          <ScheduleExportButton kind={kind} employees={kind==='employee'?rows:[]} clients={kind==='client'?rows:[]} location={location} disabled={loading||busy}/>
+          {manager&&<ScheduleExportButton kind={kind} employees={kind==='employee'?rows:[]} clients={kind==='client'?rows:[]} location={location} disabled={loading||busy}/>}
           <input aria-label="Search schedule" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search name, hours, notes…"/>
           {manager&&<button type="button" className="danger schedule-clear-all" disabled={busy||loading} onClick={clearSchedule}>Clear Entire Schedule</button>}
         </div>
