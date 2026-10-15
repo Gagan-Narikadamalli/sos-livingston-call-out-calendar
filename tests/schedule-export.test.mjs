@@ -56,8 +56,8 @@ test('summary opens as one complete worksheet with clean integer and fractional 
  assert.equal(sheet.getCell(averageIndex,2).value,0.2);
 });
 
-test('export uses saved day colors without automatic bolding or shifting colors during sorting',async()=>{
+test('export applies bold maroon only to selected days and preserves sorting',async()=>{
  const workbook=await createScheduleWorkbook(ExcelJS,{kind:'employee',location:'Test',employees:[{first_name:'Zoe',monday:'8-4',day_colors:{monday:'#0000FF'}},{first_name:'Amy',monday:'4:30-6:30',tuesday:'3:30-5:30',wednesday:'4:30-6:30',day_colors:{tuesday:'#800000'}}]});
  const read=new ExcelJS.Workbook();await read.xlsx.load(await workbook.xlsx.writeBuffer());
- const sheet=read.worksheets[0];assert.equal(sheet.getCell('A6').value,'Amy');assert.equal(sheet.getCell('D6').font.color.argb,'FF800000');assert.equal(Boolean(sheet.getCell('D6').font.bold),false);assert.equal(Boolean(sheet.getCell('C6').font.bold),false);assert.equal(sheet.getCell('C7').font.color.argb,'FF0000FF');
+ const sheet=read.worksheets[0];assert.equal(sheet.getCell('A6').value,'Amy');assert.equal(sheet.getCell('D6').font.color.argb,'FF800000');assert.equal(Boolean(sheet.getCell('D6').font.bold),true);assert.equal(Boolean(sheet.getCell('C6').font.bold),false);assert.equal(sheet.getCell('C7').font.color.argb,'FF0000FF');assert.equal(Boolean(sheet.getCell('C7').font.bold),false);
 });

@@ -180,4 +180,4 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .schedule-font-control>button{width:25px;height:25px;padding:0;border:1px solid #cbd9e4;border-radius:5px;background:#fff;box-shadow:none;font-size:14px}
 .schedule-font-control>button.active{background:#fae8ed;border-color:#800000}
 .schedule-font-control>button span{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px}
-.schedule-editor .schedule-colored-input input[type=time]{color:var(--time-color);font-weight:400}
+.schedule-editor .schedule-colored-input input[type=time]{color:var(--time-color);font-weight:var(--time-weight,400)}
