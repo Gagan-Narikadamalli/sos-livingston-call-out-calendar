@@ -42,3 +42,16 @@ test('multi-month workbook preserves each month grid, notes, styling and unique 
  assert.equal(read.getWorksheet('2027-01 Details').getCell('E4').value,'Full note');
  assert.equal(read.getWorksheet('2027-01 Calendar').getCell('B1').fill.fgColor.argb,'FF2D7485');
 });
+
+test('multi-month headers retain merged ranges, full teal fill and white title text after reopening',async()=>{
+ const workbook=await createCalendarRangeWorkbook(ExcelJS,{location:'Parsippany',months:[{month:'2026-10'},{month:'2026-11'}]});
+ const read=new ExcelJS.Workbook();await read.xlsx.load(await workbook.xlsx.writeBuffer());
+ for(const month of ['2026-10','2026-11']){
+  const sheet=read.getWorksheet(`${month} Calendar`);
+  assert.ok(sheet.getCell('C1').isMerged);assert.equal(sheet.getCell('H1').master.address,'B1');assert.equal(sheet.getCell('H2').master.address,'B2');
+  for(const address of ['B1','C1','H1','C2','H2'])assert.equal(sheet.getCell(address).fill.fgColor.argb,'FF2D7485',address);
+  assert.equal(sheet.getCell('B1').font.color.argb,'FFFFFFFF');assert.equal(sheet.getCell('B1').font.size,20);
+  assert.equal(sheet.getCell('J4').isMerged,true);
+  assert.equal(read.getWorksheet(`${month} Details`).getCell('E1').master.address,'A1');
+ }
+});
