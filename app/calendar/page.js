@@ -158,7 +158,7 @@ export default function TeamCalendar(){
 
       <div className="calendar-controls">
         <div className="legend"><i className="recent"/>New in last 24 hours <i className="employee"/>Employee note <i className="parent-note"/>Parent/Client note <i className="note"/>Manager note</div>
-        <div className="calendar-filter-export"><CalendarFilters value={activeFilter} onChange={setActiveFilter}/><CalendarExportButton month={monthKey(month)} location={LOCATION} entries={entries.filter(entry=>entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))} notes={notes.filter(note=>noteMatchesFilter(note,activeFilter))} filterLabel={activeFilter?`${activeFilter} filter`:'All calendar events'} disabled={loadedMonth!==monthKey(month)}/></div>
+        <div className="calendar-filter-export"><CalendarFilters value={activeFilter} onChange={setActiveFilter}/><CalendarExportButton manager={false} filterEntries={data=>data.filter(entry=>entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))} filterNotes={data=>data.filter(note=>noteMatchesFilter(note,activeFilter))} month={monthKey(month)} location={LOCATION} entries={entries.filter(entry=>entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))} notes={notes.filter(note=>noteMatchesFilter(note,activeFilter))} filterLabel={activeFilter?`${activeFilter} filter`:'All calendar events'} disabled={loadedMonth!==monthKey(month)}/></div>
       </div>
 
       <div className="week">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><b key={day}>{day}</b>)}</div>

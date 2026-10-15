@@ -55,3 +55,9 @@ test('summary opens as one complete worksheet with clean integer and fractional 
  const averageIndex=labels.indexOf('Average');assert.equal(sheet.getCell(averageIndex,2).numFmt,'#,##0.00');
  assert.equal(sheet.getCell(averageIndex,2).value,0.2);
 });
+
+test('export bolds positive daily totals below five hours but not exactly five or split totals above five',async()=>{
+ const workbook=await createScheduleWorkbook(ExcelJS,{kind:'employee',location:'Test',employees:[{first_name:'Test',monday:'4:30-6:30',tuesday:'8-1',wednesday:'9-12;1-4',thursday:'9-11;1-3',friday:''}]});
+ const read=new ExcelJS.Workbook();await read.xlsx.load(await workbook.xlsx.writeBuffer());
+ const sheet=read.worksheets[0];assert.equal(sheet.getCell('C6').font.bold,true);assert.equal(Boolean(sheet.getCell('D6').font.bold),false);assert.equal(Boolean(sheet.getCell('E6').font.bold),false);assert.equal(sheet.getCell('F6').font.bold,true);assert.equal(Boolean(sheet.getCell('G6').font.bold),false);
+});
