@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {hasScheduledHours,qualifiesForCoverage,summarizeSchedules,averageDailyMetrics,averageBtShortage,invalidScheduleEntries} from '../lib/schedule-summary.mjs';
+import {hasScheduledHours,qualifiesForCoverage,summarizeSchedules,averageDailyMetrics,averageBtShortage,weeklyHourMetrics,invalidScheduleEntries} from '../lib/schedule-summary.mjs';
 import {parseScheduleTime,normalizedScheduleTime,serializeRanges} from '../lib/schedule-time.mjs';
 test('blank/off days are not availability; malformed times are flagged',()=>{
  for(const value of ['',null,'  ','Off','N/A','—','---','PTO','not working'])assert.equal(hasScheduledHours(value),false);
@@ -80,4 +80,26 @@ test('Manager/HR contributes to staff hours and roster but not BT or intern cove
  const row=summarizeSchedules([{category:'Manager/HR',monday:'8-4'},{category:'HR',monday:'8-4'},{category:'Employee',monday:'8-4'}],[{monday:'8-4'}])[0];
  assert.equal(row.employees,3);assert.equal(row.staffMinutes,1440);assert.equal(row.bt,1);
  assert.equal(row.btOnly.staff,1);assert.equal(row.withInterns.staff,1);
+});
+
+test('weekly supervision is 20% of in-center client hours and combined/ratio metrics use saved totals',()=>{
+ const days=summarizeSchedules([{category:'Employee',monday:'9-5'},{category:'Intern',monday:'9-12'}],[
+  {category:'Client/Kid',monday:'9-5'},
+  {category:'Home Client',monday:'9-5'}
+ ]);
+ const hours=weeklyHourMetrics(days);
+ assert.equal(hours.staffMinutes,660);
+ assert.equal(hours.clientMinutes,480);
+ assert.equal(hours.supervisorMinutes,96);
+ assert.equal(hours.clientAndSupervisorMinutes,576);
+ assert.equal(hours.clientToStaffRatio,480/660);
+});
+test('supervisor and ratio metrics preserve partial hours and handle zero staff safely',()=>{
+ assert.deepEqual(weeklyHourMetrics([{staffMinutes:660,clientMinutes:505}]),{
+  staffMinutes:660,clientMinutes:505,supervisorMinutes:101,clientAndSupervisorMinutes:606,clientToStaffRatio:505/660
+ });
+ assert.deepEqual(weeklyHourMetrics([]),{
+  staffMinutes:0,clientMinutes:0,supervisorMinutes:0,clientAndSupervisorMinutes:0,clientToStaffRatio:null
+ });
+ assert.equal(weeklyHourMetrics([{staffMinutes:0,clientMinutes:480}]).clientToStaffRatio,null);
 });

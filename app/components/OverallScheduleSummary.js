@@ -2,7 +2,7 @@
 import {useEffect,useState} from 'react';
 import ScheduleExportButton from './ScheduleExportButton';
 import {apiRequest} from '../../lib/client-api';
-import {summarizeSchedules,averageDailyMetrics,averageBtShortage,invalidScheduleEntries,isCenterClient} from '../../lib/schedule-summary.mjs';
+import {summarizeSchedules,averageDailyMetrics,averageBtShortage,weeklyHourMetrics,invalidScheduleEntries,isCenterClient} from '../../lib/schedule-summary.mjs';
 import {WEEKDAYS,DAY_NAMES,parseScheduleTime,formatHours,scheduleCategory} from '../../lib/schedule-time.mjs';
 const dayName=day=>DAY_NAMES[WEEKDAYS.indexOf(day)];
 const categoryName=row=>({bt:'BT',bcba:'BCBA',intern:'Intern',managerhr:'Manager/HR'}[scheduleCategory(row)]);
@@ -29,6 +29,7 @@ export default function OverallScheduleSummary({onUnauthorized,location}){
  },[refresh]);
  const days=data?summarizeSchedules(data.employees,data.clients):[];
  const average=averageDailyMetrics(days);
+ const hours=weeklyHourMetrics(days);
  const invalid=data?invalidScheduleEntries(data.employees,data.clients):[];
  return <section className="overall-summary" aria-busy={loading}>
  <div className="schedule-topbar"><div><h2>Overall Summary</h2><p>Weekly attendance, working hours, and BT coverage from saved schedules.</p></div><div className="schedule-topbar-actions"><ScheduleExportButton kind="summary" employees={data?.employees||[]} clients={data?.clients||[]} location={location} disabled={loading||!data}/><button type="button" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>Refresh Summary</button></div></div>
@@ -38,8 +39,11 @@ export default function OverallScheduleSummary({onUnauthorized,location}){
   <div className="card summary-stat summary-stat-staff"><span className="summary-stat-label">STAFF ROSTER</span><h3>Total employees</h3><strong>{data.employees.length}</strong><p>BT, BCBA, interns, and Manager/HR</p></div>
   <div className="card summary-stat summary-stat-clients"><span className="summary-stat-label">CLIENT ROSTER</span><h3>Total clients / kids</h3><strong>{data.clients.filter(isCenterClient).length}</strong><p>In-center schedules</p></div>
   <div className="card summary-stat summary-stat-coverage"><span className="summary-stat-label">BT ONLY · 10% CALL-OUTS</span><h3>Average BT shortage</h3><strong>{decimal(averageBtShortage(days))}</strong><p>Monday–Friday, including zero-shortage days</p></div>
-  <div className="card summary-stat"><span className="summary-stat-label">WEEKLY HOURS</span><h3>Total staff hours</h3><strong>{formatHours(days.reduce((sum,row)=>sum+row.staffMinutes,0))}</strong><p>All employee categories</p></div>
-  <div className="card summary-stat summary-stat-clients"><span className="summary-stat-label">WEEKLY CLIENT HOURS</span><h3>Total client hours</h3><strong>{formatHours(days.reduce((sum,row)=>sum+row.clientMinutes,0))}</strong><p>In-center client scheduled hours</p></div>
+  <div className="card summary-stat"><span className="summary-stat-label">WEEKLY HOURS</span><h3>Total staff hours</h3><strong>{formatHours(hours.staffMinutes)}</strong><p>All employee categories</p></div>
+  <div className="card summary-stat summary-stat-clients"><span className="summary-stat-label">WEEKLY CLIENT HOURS</span><h3>Total client hours</h3><strong>{formatHours(hours.clientMinutes)}</strong><p>In-center client scheduled hours</p></div>
+  <div className="card summary-stat summary-stat-supervisor"><span className="summary-stat-label">20% SUPERVISION</span><h3>Supervisor hours</h3><strong>{formatHours(hours.supervisorMinutes)}</strong><p>20% of total in-center client hours</p></div>
+  <div className="card summary-stat summary-stat-combined"><span className="summary-stat-label">COMBINED HOURS</span><h3>Client + supervisor hours</h3><strong>{formatHours(hours.clientAndSupervisorMinutes)}</strong><p>Total client hours plus supervisor hours</p></div>
+  <div className="card summary-stat summary-stat-ratio"><span className="summary-stat-label">CLIENT TO STAFF RATIO</span><h3>Client hours ÷ staff hours</h3><strong>{hours.clientToStaffRatio===null?'N/A':`${decimal(hours.clientToStaffRatio*100)}%`}</strong><p>Total client hours divided by total staff hours</p></div>
  </div>
  {invalid.length>0&&<div className="summary-validation" role="alert"><h3>Schedule times need correction</h3><p>These entries are excluded from daily counts and hours until corrected in the schedule sheet.</p><ul>{invalid.map((item,index)=><li key={`${item.id}-${item.day}-${index}`}>{item.name} · {dayName(item.day)}: {item.value}</li>)}</ul></div>}
  <section className="schedule-section"><div className="schedule-section-head"><div><h3>Daily staff, clients, and hours</h3><p>Blank days count as not scheduled. Working hours are the sum of entered time ranges.</p></div></div>

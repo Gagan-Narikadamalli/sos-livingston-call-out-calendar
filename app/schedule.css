@@ -181,3 +181,10 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .schedule-font-control>button.active{background:#fae8ed;border-color:#800000}
 .schedule-font-control>button span{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px}
 .schedule-editor .schedule-colored-input input[type=time]{color:var(--time-color);font-weight:var(--time-weight,400)}
+
+/* Match the new hour metrics to the original cards, without horizontal scrolling. */
+.overall-summary .summary-totals-with-clients{grid-auto-rows:1fr}
+.overall-summary .summary-totals-with-clients .summary-stat{min-width:0;overflow-wrap:anywhere}
+.overall-summary .summary-stat-supervisor{border-top-color:#14778c}
+.overall-summary .summary-stat-combined{border-top-color:#7950a8}
+.overall-summary .summary-stat-ratio{border-top-color:#b36b20}
