@@ -188,3 +188,21 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .overall-summary .summary-stat-supervisor{border-top-color:#14778c}
 .overall-summary .summary-stat-combined{border-top-color:#7950a8}
 .overall-summary .summary-stat-ratio{border-top-color:#b36b20}
+
+/* A single, optional weekly quick-fill control above the per-day editors. */
+.schedule-editor-bulk{border:1px solid #c9e0e7;background:#f1f8fa;border-radius:12px;padding:14px 16px;margin:0 0 20px;min-width:0}
+.schedule-editor-bulk-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px;color:#17305e}
+.schedule-editor-bulk-title strong{font-size:14px}
+.schedule-editor-bulk-title span{font-size:12px;color:#607687}
+.schedule-editor-bulk-controls{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px;min-width:0}
+.schedule-editor-bulk-time{display:grid;gap:5px;flex:0 1 125px;min-width:115px;color:#516c7c;font-size:12px;font-weight:700}
+.schedule-editor .schedule-editor-bulk-time input{width:100%;box-sizing:border-box;padding:9px 10px;min-height:40px;border:1px solid #bdced9;border-radius:8px;background:#fff;color:#17305e;font-size:14px}
+.schedule-editor-bulk-days{border:0;padding:0;margin:0;flex:1 1 245px;min-width:0}
+.schedule-editor-bulk-days legend{margin-bottom:6px;padding:0;font-size:12px;font-weight:700;color:#516c7c}
+.schedule-editor-bulk-days>div{display:flex;flex-wrap:wrap;gap:5px}
+.schedule-editor-bulk-day{display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:#fff;border:1px solid #d0dfe8;border-radius:7px;padding:7px 8px;color:#17305e;font-size:12px;font-weight:700}
+.schedule-editor .schedule-editor-bulk-day input[type="checkbox"]{width:15px;height:15px;min-width:15px;margin:0;accent-color:#14778c}
+.schedule-editor-bulk-apply{align-self:flex-end;min-height:40px;white-space:nowrap;padding:10px 15px;background:#14778c;color:white;font-size:13px;box-shadow:none}
+.schedule-editor-bulk-apply:disabled{opacity:.55;cursor:not-allowed}
+.schedule-editor-bulk-feedback{margin:10px 0 0;color:#176277;font-size:12px;font-weight:700}
+@media(max-width:600px){.schedule-editor-bulk{padding:13px 12px}.schedule-editor-bulk-controls{gap:10px}.schedule-editor-bulk-time{flex:1 1 110px}.schedule-editor-bulk-days{flex:1 1 100%}.schedule-editor-bulk-apply{width:100%}}
