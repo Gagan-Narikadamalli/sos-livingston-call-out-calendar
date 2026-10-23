@@ -61,3 +61,28 @@ test('export applies bold maroon only to selected days and preserves sorting',as
  const read=new ExcelJS.Workbook();await read.xlsx.load(await workbook.xlsx.writeBuffer());
  const sheet=read.worksheets[0];assert.equal(sheet.getCell('A6').value,'Amy');assert.equal(sheet.getCell('D6').font.color.argb,'FF800000');assert.equal(Boolean(sheet.getCell('D6').font.bold),true);assert.equal(Boolean(sheet.getCell('C6').font.bold),false);assert.equal(sheet.getCell('C7').font.color.argb,'FF0000FF');assert.equal(Boolean(sheet.getCell('C7').font.bold),false);
 });
+
+test('export weekly totals and combined ratio use each employee capped at 40h, while details remain actual',()=>{
+ const staff=[
+  {id:1,first_name:'FortyFive',category:'Employee',monday:'8-5',tuesday:'8-5',wednesday:'8-5',thursday:'8-5',friday:'8-5'},
+  {id:2,first_name:'ThirtyFive',category:'BCBA',monday:'9-4',tuesday:'9-4',wednesday:'9-4',thursday:'9-4',friday:'9-4'}
+ ];
+ const sections=buildScheduleExport('summary',staff,[{category:'Client/Kid',monday:'9-5'}]);
+ const overview=new Map(sections.find(section=>section.name==='Overview').rows);
+ assert.equal(overview.get('Weekly total staff hours (40h cap/person)'),75);
+ assert.equal(overview.get('Weekly total client hours'),8);
+ assert.equal(overview.get('Weekly supervisor hours (20%)'),1.6);
+ assert.equal(overview.get('Weekly client + supervisor hours'),9.6);
+ assert.equal(overview.get('Client + supervisor ÷ staff hours'),576/(75*60));
+ const details=sections.find(section=>section.name==='Staff Hours').rows;
+ assert.deepEqual(details.map(row=>row.at(-1)).sort((a,b)=>a-b),[35,45]);
+ assert.equal(sections.find(section=>section.name==='Daily Summary').rows[0][8],16);
+});
+test('Excel summary formats combined hours divided by capped staff hours as a percentage',async()=>{
+ const workbook=await createScheduleWorkbook(ExcelJS,{kind:'summary',employees,clients,location:'Test'});
+ const read=new ExcelJS.Workbook();await read.xlsx.load(await workbook.xlsx.writeBuffer());
+ const sheet=read.getWorksheet('Overall Summary');
+ const index=sheet.getColumn(1).values.indexOf('Client + supervisor ÷ staff hours');
+ assert.ok(index>0);
+ assert.equal(sheet.getCell(index,2).numFmt,'0.00%');
+});

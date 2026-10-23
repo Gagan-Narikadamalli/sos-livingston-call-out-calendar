@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {hasScheduledHours,qualifiesForCoverage,summarizeSchedules,averageDailyMetrics,averageBtShortage,weeklyHourMetrics,invalidScheduleEntries} from '../lib/schedule-summary.mjs';
+import {hasScheduledHours,qualifiesForCoverage,summarizeSchedules,averageDailyMetrics,averageBtShortage,weeklyHourMetrics,cappedWeeklyStaffMinutes,invalidScheduleEntries} from '../lib/schedule-summary.mjs';
 import {parseScheduleTime,normalizedScheduleTime,serializeRanges} from '../lib/schedule-time.mjs';
 test('blank/off days are not availability; malformed times are flagged',()=>{
  for(const value of ['',null,'  ','Off','N/A','—','---','PTO','not working'])assert.equal(hasScheduledHours(value),false);
@@ -83,11 +83,12 @@ test('Manager/HR contributes to staff hours and roster but not BT or intern cove
 });
 
 test('weekly supervision is 20% of in-center client hours and combined/ratio metrics use saved totals',()=>{
- const days=summarizeSchedules([{category:'Employee',monday:'9-5'},{category:'Intern',monday:'9-12'}],[
+ const employees=[{category:'Employee',monday:'9-5'},{category:'Intern',monday:'9-12'}];
+ const days=summarizeSchedules(employees,[
   {category:'Client/Kid',monday:'9-5'},
   {category:'Home Client',monday:'9-5'}
  ]);
- const hours=weeklyHourMetrics(days);
+ const hours=weeklyHourMetrics(days,employees);
  assert.equal(hours.staffMinutes,660);
  assert.equal(hours.clientMinutes,480);
  assert.equal(hours.supervisorMinutes,96);
@@ -95,11 +96,35 @@ test('weekly supervision is 20% of in-center client hours and combined/ratio met
  assert.equal(hours.combinedToStaffRatio,576/660);
 });
 test('supervisor and ratio metrics preserve partial hours and handle zero staff safely',()=>{
- assert.deepEqual(weeklyHourMetrics([{staffMinutes:660,clientMinutes:505}]),{
+ assert.deepEqual(weeklyHourMetrics([{staffMinutes:660,clientMinutes:505}],[{monday:'08:00 AM - 07:00 PM'}]),{
   staffMinutes:660,clientMinutes:505,supervisorMinutes:101,clientAndSupervisorMinutes:606,combinedToStaffRatio:606/660
  });
- assert.deepEqual(weeklyHourMetrics([]),{
+ assert.deepEqual(weeklyHourMetrics([],[]),{
   staffMinutes:0,clientMinutes:0,supervisorMinutes:0,clientAndSupervisorMinutes:0,combinedToStaffRatio:null
  });
- assert.equal(weeklyHourMetrics([{staffMinutes:0,clientMinutes:480}]).combinedToStaffRatio,null);
+ assert.equal(weeklyHourMetrics([{staffMinutes:0,clientMinutes:480}],[]).combinedToStaffRatio,null);
+});
+
+test('staff weekly calculation caps each employee at 40h across all five days, not per day',()=>{
+ const employees=[
+  {category:'Employee',monday:'8-5',tuesday:'8-5',wednesday:'8-5',thursday:'8-5',friday:'8-5'}, // 45h => 40h
+  {category:'BCBA',monday:'9-4',tuesday:'9-4',wednesday:'9-4',thursday:'9-4',friday:'9-4'}, // 35h => 35h
+  {category:'Intern',monday:'9-5',tuesday:'9-5',wednesday:'9-5',thursday:'9-5',friday:'9-5'}, // 40h => 40h
+  {category:'Manager/HR',monday:'9-5'} // 8h => 8h
+ ];
+ const days=summarizeSchedules(employees,[{category:'Client/Kid',monday:'9-5'}]);
+ assert.equal(days.reduce((total,day)=>total+day.staffMinutes,0),128*60);
+ assert.equal(cappedWeeklyStaffMinutes(employees),123*60);
+ const weekly=weeklyHourMetrics(days,employees);
+ assert.equal(weekly.staffMinutes,123*60);
+ assert.equal(weekly.clientMinutes,8*60);
+ assert.equal(weekly.supervisorMinutes,96);
+ assert.equal(weekly.combinedToStaffRatio,576/(123*60));
+});
+test('45 hours count as 40, 35 stays 35 and split-shift minutes are respected',()=>{
+ const employees=[{monday:'8-12;1-6',tuesday:'8-5',wednesday:'8-5',thursday:'8-5',friday:'8-5'},
+                  {monday:'9-4',tuesday:'9-4',wednesday:'9-4',thursday:'9-4',friday:'9-4'}];
+ assert.equal(cappedWeeklyStaffMinutes(employees),75*60);
+ assert.equal(cappedWeeklyStaffMinutes([{monday:'8-12;1-6'}]),9*60);
+ assert.equal(cappedWeeklyStaffMinutes([{monday:'bad',tuesday:'8-4'}]),8*60);
 });
