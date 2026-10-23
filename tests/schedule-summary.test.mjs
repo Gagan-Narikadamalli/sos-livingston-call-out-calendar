@@ -92,14 +92,14 @@ test('weekly supervision is 20% of in-center client hours and combined/ratio met
  assert.equal(hours.clientMinutes,480);
  assert.equal(hours.supervisorMinutes,96);
  assert.equal(hours.clientAndSupervisorMinutes,576);
- assert.equal(hours.clientToStaffRatio,480/660);
+ assert.equal(hours.combinedToStaffRatio,576/660);
 });
 test('supervisor and ratio metrics preserve partial hours and handle zero staff safely',()=>{
  assert.deepEqual(weeklyHourMetrics([{staffMinutes:660,clientMinutes:505}]),{
-  staffMinutes:660,clientMinutes:505,supervisorMinutes:101,clientAndSupervisorMinutes:606,clientToStaffRatio:505/660
+  staffMinutes:660,clientMinutes:505,supervisorMinutes:101,clientAndSupervisorMinutes:606,combinedToStaffRatio:606/660
  });
  assert.deepEqual(weeklyHourMetrics([]),{
-  staffMinutes:0,clientMinutes:0,supervisorMinutes:0,clientAndSupervisorMinutes:0,clientToStaffRatio:null
+  staffMinutes:0,clientMinutes:0,supervisorMinutes:0,clientAndSupervisorMinutes:0,combinedToStaffRatio:null
  });
- assert.equal(weeklyHourMetrics([{staffMinutes:0,clientMinutes:480}]).clientToStaffRatio,null);
+ assert.equal(weeklyHourMetrics([{staffMinutes:0,clientMinutes:480}]).combinedToStaffRatio,null);
 });
