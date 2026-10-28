@@ -99,3 +99,34 @@ button.event.note.employee-note.recent:hover {
 .overlay {
   z-index:1000
 }
+
+
+/* Employee form submissions keep a permanent Request tag. */
+.event.request {
+  position:relative;
+  padding-right:82px
+}
+.event.request::before {
+  content:'Request';
+  position:absolute;
+  top:6px;
+  right:7px;
+  padding:3px 7px;
+  border:1px solid #aeb9c7;
+  border-radius:999px;
+  background:#f5f7fa;
+  color:#45556a;
+  box-shadow:0 1px 3px #0001;
+  font-size:10px;
+  font-weight:800;
+  line-height:1.15;
+  letter-spacing:.01em;
+  white-space:nowrap;
+  pointer-events:none
+}
+.event.request.recent {
+  min-height:58px
+}
+.event.request.recent::after {
+  top:28px
+}
