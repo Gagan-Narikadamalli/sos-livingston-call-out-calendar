@@ -70,6 +70,8 @@ export default function Manager(){
   const [loadedMonth,setLoadedMonth]=useState('');
   const [,setClock]=useState(Date.now());
   const loadId=useRef(0);
+  const calendarRef=useRef(null);
+  const [scrollRequest,setScrollRequest]=useState({mode:'today',id:0});
 
   useEffect(()=>{
     apiRequest('/api/login')
@@ -88,6 +90,38 @@ export default function Manager(){
     const timer=setInterval(()=>setClock(Date.now()),60000);
     return()=>clearInterval(timer);
   },[]);
+
+  useEffect(()=>{
+    const key=monthKey(month);
+    if(loadedMonth!==key||!calendarRef.current)return;
+
+    const today=new Date();
+    const viewingCurrentMonth=
+      today.getFullYear()===month.getFullYear()&&today.getMonth()===month.getMonth();
+    const targetDay=scrollRequest.mode==='today'&&viewingCurrentMonth?today.getDate():1;
+
+    const timer=setTimeout(()=>{
+      const target=calendarRef.current?.querySelector(`[data-day="${targetDay}"]`);
+      target?.scrollIntoView({
+        behavior:scrollRequest.id===0?'auto':'smooth',
+        block:'start',
+        inline:'nearest',
+      });
+    },0);
+
+    return()=>clearTimeout(timer);
+  },[loadedMonth,month,scrollRequest]);
+
+  function navigateMonth(offset){
+    setScrollRequest(current=>({mode:'start',id:current.id+1}));
+    setMonth(current=>new Date(current.getFullYear(),current.getMonth()+offset,1));
+  }
+
+  function goToday(){
+    const today=new Date();
+    setScrollRequest(current=>({mode:'today',id:current.id+1}));
+    setMonth(new Date(today.getFullYear(),today.getMonth(),1));
+  }
 
   async function load(){
     const current=++loadId.current;
@@ -294,12 +328,12 @@ export default function Manager(){
       </div>
 
       <div className="calendar-head">
-        <button onClick={()=>setMonth(new Date(month.getFullYear(),month.getMonth()-1,1))}>← Previous</button>
+        <button onClick={()=>navigateMonth(-1)}>← Previous</button>
         <div>
           <h1>{month.toLocaleString('en',{month:'long',year:'numeric'})}</h1>
-          <button className="today-button" onClick={()=>setMonth(new Date(new Date().getFullYear(),new Date().getMonth(),1))}>Today</button>
+          <button className="today-button" onClick={goToday}>Today</button>
         </div>
-        <button onClick={()=>setMonth(new Date(month.getFullYear(),month.getMonth()+1,1))}>Next →</button>
+        <button onClick={()=>navigateMonth(1)}>Next →</button>
       </div>
 
       <div className="calendar-controls">
@@ -308,10 +342,10 @@ export default function Manager(){
       </div>
 
       <div className="week">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><b key={day}>{day}</b>)}</div>
-      <div className="calendar">
+      <div className="calendar" ref={calendarRef}>
         {cells.map((day,index)=>{
           const date=day?`${monthKey(month)}-${pad(day)}`:'';
-          return <div className="day" key={index}>{day&&<>
+          return <div className="day" data-day={day||undefined} key={index}>{day&&<>
             <div className="daytop">
               <b>{day}</b>
               <button className="plus" title="Add calendar note" onClick={()=>setModal({
