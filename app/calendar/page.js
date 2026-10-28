@@ -168,7 +168,7 @@ export default function TeamCalendar(){
             <div className="daytop"><b>{day}</b></div>
             {entries
               .filter(entry=>entry.event_date===date&&entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))
-              .map(entry=><div className={`event ${entry.submitter_type.toLowerCase()}${isNew(entry.submitted_at)?' recent':''}`} key={'e'+entry.id}>
+              .map(entry=><div className={`event ${entry.submitter_type.toLowerCase()} request${isNew(entry.submitted_at)?' recent':''}`} key={'e'+entry.id}>
                 <small>Employee Note{isNew(entry.submitted_at)?' · New':''}</small>
                 {entry.name} — {entry.request_type}
               </div>)}
