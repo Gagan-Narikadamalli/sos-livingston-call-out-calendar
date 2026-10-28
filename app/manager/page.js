@@ -324,7 +324,7 @@ export default function Manager(){
 
             {entries
               .filter(entry=>entry.event_date===date&&entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))
-              .map(entry=><button className={`event ${entry.submitter_type.toLowerCase()}${isNew(entry.submitted_at)?' recent':''}`} key={'e'+entry.id} onClick={()=>setModal({...entry,kind:'entry'})}>
+              .map(entry=><button className={`event ${entry.submitter_type.toLowerCase()} request${isNew(entry.submitted_at)?' recent':''}`} key={'e'+entry.id} onClick={()=>setModal({...entry,kind:'entry'})}>
                 <small>Employee Note{isNew(entry.submitted_at)?' · New':''}</small>
                 {entry.name} — {entry.request_type}
               </button>)}
