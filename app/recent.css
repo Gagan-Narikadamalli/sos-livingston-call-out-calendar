@@ -127,6 +127,11 @@ button.event.note.employee-note.recent:hover {
 .event.request.recent {
   min-height:58px
 }
-.event.request.recent::after {
+/* Fresh requests show New first and Request underneath.
+   When New expires after 24 hours, Request returns to the top automatically. */
+.event.request.recent::before {
   top:28px
+}
+.event.request.recent::after {
+  top:6px
 }
