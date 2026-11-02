@@ -3,7 +3,6 @@
 import {useEffect,useRef,useState} from 'react';
 import Brand from '../components/Brand';
 import CalendarFilters from '../components/CalendarFilters';
-import HolidayManager from '../components/HolidayManager';
 import {apiRequest} from '../../lib/client-api';
 
 const LOCATION='Livingston';
@@ -196,7 +195,7 @@ export default function TeamCalendar(){
 
       <div className="calendar-controls">
         <div className="legend"><i className="recent"/>New in last 24 hours <i className="employee"/>Employee note <i className="parent-note"/>Parent/Client note <i className="note"/>Manager note</div>
-        <div className="calendar-filter-export"><CalendarFilters value={activeFilter} onChange={setActiveFilter}/><HolidayManager month={monthKey(month)} dates={holidays} onSaved={setHolidays}/></div>
+        <div className="calendar-filter-export"><CalendarFilters value={activeFilter} onChange={setActiveFilter}/></div>
       </div>
 
       <div className="week">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><b key={day}>{day}</b>)}</div>
