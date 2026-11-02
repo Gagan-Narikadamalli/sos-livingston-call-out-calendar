@@ -1,12 +1,21 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import {apiRequest} from '../../lib/client-api';
 
 const WEEKDAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 export default function HolidayManager({month,dates=[],onSaved}){
+  const [managerAccess,setManagerAccess]=useState(false);
   const [open,setOpen]=useState(false);
+
+  useEffect(()=>{
+    let active=true;
+    apiRequest('/api/login')
+      .then(data=>{if(active)setManagerAccess(data.authenticated===true)})
+      .catch(()=>{if(active)setManagerAccess(false)});
+    return()=>{active=false};
+  },[]);
   const [draft,setDraft]=useState([]);
   const [saving,setSaving]=useState(false);
   const [message,setMessage]=useState('');
@@ -48,6 +57,8 @@ export default function HolidayManager({month,dates=[],onSaved}){
       setSaving(false);
     }
   }
+
+  if(!managerAccess)return null;
 
   return <>
     <button type="button" className="filter-trigger holiday-trigger" onClick={openEditor}>
