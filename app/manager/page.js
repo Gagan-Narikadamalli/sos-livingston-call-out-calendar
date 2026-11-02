@@ -295,6 +295,8 @@ export default function Manager(){
   const days=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
   const cells=[...Array(first.getDay()).fill(null),...Array.from({length:days},(_,i)=>i+1)];
   while(cells.length%7)cells.push(null);
+  const today=new Date();
+  const todayKey=`${monthKey(today)}-${pad(today.getDate())}`;
 
   return <Shell authenticated logout={logout}>
     <main className="manager">
@@ -345,7 +347,8 @@ export default function Manager(){
       <div className="calendar" ref={calendarRef}>
         {cells.map((day,index)=>{
           const date=day?`${monthKey(month)}-${pad(day)}`:'';
-          return <div className="day" data-day={day||undefined} key={index}>{day&&<>
+          const isToday=date===todayKey;
+          return <div className={`day${isToday?' today':''}`} data-day={day||undefined} key={index}>{day&&<>
             <div className="daytop">
               <b>{day}</b>
               <button className="plus" title="Add calendar note" onClick={()=>setModal({
