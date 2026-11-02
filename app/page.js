@@ -1,8 +1,5 @@
 'use client';
-import {
-   useState
-}
- from 'react';
+import {useEffect,useState} from 'react';
 import Brand from './components/Brand';
 import {
    apiRequest
@@ -28,9 +25,40 @@ export default function Home() {
     const [form, setForm] = useState(EMPTY_FORM);
     const [message, setMessage] = useState('');
     const [busy, setBusy] = useState(false);
+    const [holidayDates,setHolidayDates]=useState([]);
+    const [holidayLoading,setHolidayLoading]=useState(false);
+    const [holidayCheckError,setHolidayCheckError]=useState('');
     const minimumPtoDate = getMinimumPtoDate();
     const reasonRequired = form.request_type === 'Non-PTO / Out';
     const dateMinimum = form.request_type === 'PTO' || form.request_type === '1/2 Day PTO' ? minimumPtoDate : undefined;
+    const holidayRange=getFormDateRange(form);
+    const holidayRangeStart=holidayRange?.start||'';
+    const holidayRangeEnd=holidayRange?.end||'';
+
+    useEffect(()=>{
+        let active=true;
+        if(!holidayRangeStart||!holidayRangeEnd){
+            setHolidayDates([]);
+            setHolidayLoading(false);
+            setHolidayCheckError('');
+            return ()=>{active=false};
+        }
+        setHolidayLoading(true);
+        setHolidayCheckError('');
+        apiRequest('/api/holidays?start='+holidayRangeStart+'&end='+holidayRangeEnd)
+            .then(data=>{if(active)setHolidayDates(data.dates||[])})
+            .catch(error=>{if(active)setHolidayCheckError(error.message||'Could not check holiday dates.')})
+            .finally(()=>{if(active)setHolidayLoading(false)});
+        return ()=>{active=false};
+    },[holidayRangeStart,holidayRangeEnd]);
+
+    const selectedHolidayDates=form.date_mode==='multiple'
+        ?holidayDates.filter(date=>form.selected_dates.includes(date))
+        :form.date_mode==='range'
+            ?holidayDates.filter(date=>date>=form.range_start&&date<=form.range_end)
+            :form.event_date&&holidayDates.includes(form.event_date)
+                ?[form.event_date]
+                :[];
     function updateForm(changes) {
         setForm((current) => ({ ...current, ...changes
 }));
@@ -59,6 +87,18 @@ export default function Home() {
 }
     async function submit(event) {
         event.preventDefault();
+        if(holidayLoading){
+            setMessage('Checking the selected dates for holidays. Please wait.');
+            return;
+        }
+        if(holidayCheckError){
+            setMessage('Holiday dates could not be verified. Please try again.');
+            return;
+        }
+        if(selectedHolidayDates.length){
+            setMessage('Holiday dates cannot be requested: '+selectedHolidayDates.join(', ')+'. Choose different dates.');
+            return;
+        }
         setBusy(true);
         setMessage('');
         try {
@@ -266,21 +306,35 @@ export default function Home() {
               <p className="muted">
                 Submission details, employee email, and submission time are available only to authorized managers.
               </p>
+              {holidayLoading&&<p className="muted">Checking selected dates for holidays…</p>}
+              {holidayCheckError&&<p className="holiday-warning">Holiday dates could not be checked. Please try again before submitting.</p>}
+              {selectedHolidayDates.length>0&&<p className="holiday-warning">Holiday dates are unavailable: {selectedHolidayDates.join(', ')}. Remove those dates or choose different dates.</p>}
               <p className="request-notice">
                 <strong>This is only a request and is still pending manager approval.</strong>
               </p>
               {message && <p className="message">{message
 }</p>
 }
-              <button disabled={busy
-}>{busy ? 'Submitting…' : 'Submit request'
-}</button>
+              <button disabled={busy||holidayLoading||!!holidayCheckError||selectedHolidayDates.length>0}>{busy ? 'Submitting…' : 'Submit request'}</button>
             </div>
           </form>
         </main>
       </>
     );
 }
+function getFormDateRange(form){
+    if(form.date_mode==='range'){
+        return form.range_start&&form.range_end
+            ?{start:form.range_start,end:form.range_end}
+            :null;
+    }
+    const dates=form.date_mode==='multiple'
+        ?form.selected_dates.filter(Boolean)
+        :form.event_date?[form.event_date]:[];
+    const sorted=[...dates].sort();
+    return sorted.length?{start:sorted[0],end:sorted[sorted.length-1]}:null;
+}
+
 function getMinimumPtoDate() {
     return earliestAdvanceDate();
 }

@@ -134,3 +134,123 @@
     grid-template-columns:1fr;
   }
 }
+
+
+.calendar-filter-export{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.holiday-trigger{
+  white-space:nowrap;
+}
+.holiday-trigger svg{
+  width:18px;
+  height:18px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.calendar .day.holiday{
+  background:#e2e8f0;
+  border-color:#64748b;
+  box-shadow:inset 0 0 0 2px #64748b;
+}
+.calendar .day.holiday .daytop>b{
+  color:#1e293b;
+}
+.calendar .day.today.holiday{
+  background:#e7f3f5;
+  box-shadow:inset 0 0 0 3px var(--teal);
+}
+.holiday-label{
+  display:block;
+  margin:8px 0 5px;
+  padding:5px 7px;
+  border-radius:5px;
+  background:#26364b;
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.7px;
+  text-align:center;
+}
+.holiday-warning{
+  color:#8b1e1e;
+  background:#fff0f0;
+  border:2px solid #e4aaaa;
+  border-radius:9px;
+  padding:12px 14px;
+  font-weight:700;
+}
+.holiday-modal{
+  width:min(640px,95vw);
+}
+.holiday-picker-weekdays,.holiday-picker-grid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:7px;
+}
+.holiday-picker-weekdays span{
+  text-align:center;
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+  padding:4px 0;
+}
+.holiday-picker-day,.holiday-picker-empty{
+  min-height:42px;
+  width:100%;
+}
+.holiday-picker-day{
+  padding:6px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  color:var(--deep);
+  font-size:15px;
+}
+.holiday-picker-day:hover{
+  background:#eef4f7;
+  color:var(--deep);
+  border-color:#9aa9b7;
+}
+.holiday-picker-day.selected,.holiday-picker-day.selected:hover{
+  background:#26364b;
+  border-color:#26364b;
+  color:#fff;
+}
+.holiday-picker-empty{
+  display:block;
+}
+.holiday-selection-summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.holiday-help{
+  line-height:1.45;
+}
+.holiday-overlay{
+  z-index:100;
+}
+@media(max-width:800px){
+  .calendar-filter-export{
+    width:100%;
+    justify-content:flex-start;
+  }
+  .calendar-filter-export .holiday-trigger{
+    width:auto;
+    flex:1 1 150px;
+    justify-content:center;
+  }
+  .holiday-modal{
+    max-height:95vh;
+    overflow:auto;
+  }
+}

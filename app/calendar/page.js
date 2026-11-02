@@ -49,6 +49,7 @@ export default function TeamCalendar(){
   const [month,setMonth]=useState(new Date(new Date().getFullYear(),new Date().getMonth(),1));
   const [entries,setEntries]=useState([]);
   const [notes,setNotes]=useState([]);
+  const [holidays,setHolidays]=useState([]);
   const [message,setMessage]=useState('');
   const [activeFilter,setActiveFilter]=useState('');
   const [loadedMonth,setLoadedMonth]=useState('');
@@ -115,6 +116,7 @@ export default function TeamCalendar(){
       if(current!==loadId.current)return;
       setEntries(data.entries);
       setNotes(data.notes);
+      setHolidays(data.holidays||[]);
       setLoadedMonth(monthKey(month));
     }catch(error){
       if(current!==loadId.current)return;
@@ -201,8 +203,10 @@ export default function TeamCalendar(){
         {cells.map((day,index)=>{
           const date=day?`${monthKey(month)}-${pad(day)}`:'';
           const isToday=date===todayKey;
-          return <div className={`day${isToday?' today':''}`} data-day={day||undefined} key={index}>{day&&<>
+          const isHoliday=holidays.includes(date);
+          return <div className={`day${isToday?' today':''}${isHoliday?' holiday':''}`} data-day={day||undefined} key={index}>{day&&<>
             <div className="daytop"><b>{day}</b></div>
+            {isHoliday&&<div className="holiday-label">HOLIDAY</div>}
             {entries
               .filter(entry=>entry.event_date===date&&entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))
               .map(entry=><div className={`event ${entry.submitter_type.toLowerCase()} request${isNew(entry.submitted_at)?' recent':''}`} key={'e'+entry.id}>

@@ -14,7 +14,7 @@ async function handleGET(req){
   const sql=await db();
   await materializeRecurringNotesForMonth(sql,month);
 
-  const [entries,notes]=await Promise.all([
+  const [entries,notes,holidayRows]=await Promise.all([
     sql`
       select id,submitter_type,name,request_type,event_date::text,submitted_at
       from call_outs
@@ -29,9 +29,16 @@ async function handleGET(req){
         and event_date<((${month+'-01'})::date+interval '1 month')
       order by event_date,created_at
     `,
+    sql`
+      select event_date::text
+      from calendar_holidays
+      where event_date>=${month+'-01'}::date
+        and event_date<(${month+'-01'}::date+interval '1 month')
+      order by event_date
+    `,
   ]);
 
-  return NextResponse.json({entries,notes});
+  return NextResponse.json({entries,notes,holidays:holidayRows.map(row=>row.event_date)});
 }
 
 export const GET=withApiErrors(handleGET);

@@ -2,6 +2,7 @@ import {withApiErrors} from '../../../lib/api';
 import {NextResponse} from 'next/server';
 import {authorized} from '../../../lib/auth';
 import {db} from '../../../lib/db';
+import {findHolidayDates,holidayConflictMessage} from '../../../lib/holidays';
 import {ensureRecurrenceExceptions,materializeRecurringNotesForMonth,stopOngoingRecurrenceIfCurrentMonthEmpty} from '../../../lib/note-recurrence';
 import {clean,validDate,validMonth} from '../../../lib/validate';
 
@@ -138,6 +139,11 @@ async function handlePOST(req){
   const dates=ordinaryDates(b);
   if(typeof dates==='string')return NextResponse.json({error:dates},{status:400});
 
+  const blockedDates=await findHolidayDates(sql,dates);
+  if(blockedDates.length){
+    return NextResponse.json({error:holidayConflictMessage(blockedDates)},{status:400});
+  }
+
   const notes=await sql.begin(async transaction=>{
     const created=[];
     for(const eventDate of dates){
@@ -195,6 +201,13 @@ async function handlePATCH(req){
 
   const current=existing[0];
   const dateChanged=current.event_date!==event_date;
+
+  if(dateChanged){
+    const blockedDates=await findHolidayDates(sql,[event_date]);
+    if(blockedDates.length){
+      return NextResponse.json({error:holidayConflictMessage(blockedDates)},{status:400});
+    }
+  }
 
   if(current.recurrence_id&&dateChanged){
     await ensureRecurrenceExceptions(sql);

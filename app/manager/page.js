@@ -4,6 +4,7 @@ import {useEffect,useRef,useState} from 'react';
 import Brand from '../components/Brand';
 import CalendarExportButton from '../components/CalendarExportButton';
 import CalendarFilters from '../components/CalendarFilters';
+import HolidayManager from '../components/HolidayManager';
 import {apiRequest} from '../../lib/client-api';
 import {MANAGER_TYPES} from '../../lib/validate';
 
@@ -62,6 +63,7 @@ export default function Manager(){
   const [month,setMonth]=useState(new Date(new Date().getFullYear(),new Date().getMonth(),1));
   const [entries,setEntries]=useState([]);
   const [notes,setNotes]=useState([]);
+  const [holidays,setHolidays]=useState([]);
   const [storage,setStorage]=useState(null);
   const [modal,setModal]=useState(null);
   const [msg,setMsg]=useState('');
@@ -127,14 +129,16 @@ export default function Manager(){
     const current=++loadId.current;
     const key=monthKey(month);
     try{
-      const [entryData,noteData,storageData]=await Promise.all([
+      const [entryData,noteData,storageData,holidayData]=await Promise.all([
         apiRequest('/api/manager?month='+key),
         apiRequest('/api/notes?month='+key),
         apiRequest('/api/storage'),
+        apiRequest('/api/holidays?month='+key),
       ]);
       if(current!==loadId.current)return;
       setEntries(entryData);
       setNotes(noteData);
+      setHolidays(holidayData.dates||[]);
       setLoadedMonth(key);
       setStorage(storageData);
       setMsg('');
@@ -340,7 +344,7 @@ export default function Manager(){
 
       <div className="calendar-controls">
         <div className="legend"><i className="recent"/>New in last 24 hours <i className="employee"/>Employee note <i className="parent-note"/>Parent/Client note <i className="note"/>Manager note</div>
-        <div className="calendar-filter-export"><CalendarFilters value={activeFilter} onChange={setActiveFilter}/><CalendarExportButton manager={true} filterEntries={data=>data.filter(entry=>entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))} filterNotes={data=>data.filter(note=>noteMatchesFilter(note,activeFilter))} month={monthKey(month)} location={LOCATION} entries={entries.filter(entry=>entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))} notes={notes.filter(note=>noteMatchesFilter(note,activeFilter))} filterLabel={activeFilter?`${activeFilter} filter`:'All calendar events'} disabled={loadedMonth!==monthKey(month)}/></div>
+        <div className="calendar-filter-export"><CalendarFilters value={activeFilter} onChange={setActiveFilter}/><HolidayManager month={monthKey(month)} dates={holidays} onSaved={setHolidays}/><CalendarExportButton manager={true} filterEntries={data=>data.filter(entry=>entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))} filterNotes={data=>data.filter(note=>noteMatchesFilter(note,activeFilter))} month={monthKey(month)} location={LOCATION} entries={entries.filter(entry=>entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))} notes={notes.filter(note=>noteMatchesFilter(note,activeFilter))} filterLabel={activeFilter?`${activeFilter} filter`:'All calendar events'} disabled={loadedMonth!==monthKey(month)}/></div>
       </div>
 
       <div className="week">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day=><b key={day}>{day}</b>)}</div>
@@ -348,16 +352,18 @@ export default function Manager(){
         {cells.map((day,index)=>{
           const date=day?`${monthKey(month)}-${pad(day)}`:'';
           const isToday=date===todayKey;
-          return <div className={`day${isToday?' today':''}`} data-day={day||undefined} key={index}>{day&&<>
+          const isHoliday=holidays.includes(date);
+          return <div className={`day${isToday?' today':''}${isHoliday?' holiday':''}`} data-day={day||undefined} key={index}>{day&&<>
             <div className="daytop">
               <b>{day}</b>
-              <button className="plus" title="Add calendar note" onClick={()=>setModal({
+              {!isHoliday&&<button className="plus" title="Add calendar note" onClick={()=>setModal({
                 kind:'note',event_date:date,title:'',note_type:'Out',note_category:'Manager Note',details:'',
                 note_date_mode:'single',repeat_dates:[date,''],range_start:date,range_end:date,
                 recurrence_kind:'range',recurrence_start:date,recurrence_end:date,
                 recurrence_weekdays:[new Date(date+'T00:00:00Z').getUTCDay()],
-              })}>+ Note</button>
+              })}>+ Note</button>}
             </div>
+            {isHoliday&&<div className="holiday-label">HOLIDAY</div>}
 
             {entries
               .filter(entry=>entry.event_date===date&&entry.submitter_type==='Employee'&&entryMatchesFilter(entry,activeFilter))

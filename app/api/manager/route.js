@@ -2,6 +2,7 @@ import {withApiErrors} from '../../../lib/api';
 import {NextResponse} from 'next/server';
 import {authorized} from '../../../lib/auth';
 import {db} from '../../../lib/db';
+import {findHolidayDates,holidayConflictMessage} from '../../../lib/holidays';
 import {ensureRecurrenceExceptions,stopOngoingRecurrenceIfCurrentMonthEmpty} from '../../../lib/note-recurrence';
 import {validateEntry,validDate,validMonth} from '../../../lib/validate';
 
@@ -45,6 +46,20 @@ async function handlePATCH(req){
   if(typeof v==='string')return NextResponse.json({error:v},{status:400});
 
   const sql=await db();
+  const existing=await sql`
+    select event_date::text
+    from call_outs
+    where id=${b.id}
+  `;
+  if(!existing.length)return NextResponse.json({error:'Record not found'},{status:404});
+
+  if(existing[0].event_date!==v.event_date){
+    const blockedDates=await findHolidayDates(sql,[v.event_date]);
+    if(blockedDates.length){
+      return NextResponse.json({error:holidayConflictMessage(blockedDates)},{status:400});
+    }
+  }
+
   const rows=await sql`
     update call_outs
     set submitter_type=${v.submitter_type},name=${v.name},email=${v.email||null},
