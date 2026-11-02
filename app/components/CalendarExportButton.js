@@ -14,10 +14,10 @@ export default function CalendarExportButton(props){
    const data=[];
    for(const [index,month] of months.entries()){
     setProgress(`Loading ${index+1}/${months.length}…`);
-    let entries,notes;
-    if(props.manager){[entries,notes]=await Promise.all([apiRequest('/api/manager?month='+month),apiRequest('/api/notes?month='+month)]);}
-    else{const result=await apiRequest('/api/calendar?month='+month);entries=result.entries;notes=result.notes;}
-    data.push({month,entries:props.filterEntries(entries),notes:props.filterNotes(notes)});
+    let entries,notes,holidayData;
+    if(props.manager){[entries,notes,holidayData]=await Promise.all([apiRequest('/api/manager?month='+month),apiRequest('/api/notes?month='+month),apiRequest('/api/holidays?month='+month)]);}
+    else{const [result,holidayResult]=await Promise.all([apiRequest('/api/calendar?month='+month),apiRequest('/api/holidays?month='+month)]);entries=result.entries;notes=result.notes;holidayData=holidayResult;}
+    data.push({month,entries:props.filterEntries(entries),notes:props.filterNotes(notes),holidays:holidayData.dates||[]});
    }
    setProgress('Creating Excel…');
    const {downloadCalendarRangeExcel}=await import('../../lib/calendar-excel.mjs');
