@@ -242,3 +242,6 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .schedule-editor .schedule-date-input-wrap button{width:38px;min-height:40px;padding:0;border:1px solid #cbd9e4;border-radius:8px;background:#eaf5f6;color:#166679;box-shadow:none;font-size:17px}
 @media(max-width:900px){.schedule-editor-details{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.schedule-editor-details{grid-template-columns:1fr}}
+
+.overall-summary .summary-stat-future{border-top-color:#7950a8}
+.schedule-editor-date-hint{margin:10px 0 0}
