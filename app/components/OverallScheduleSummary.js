@@ -2,11 +2,12 @@
 import {useEffect,useState} from 'react';
 import ScheduleExportButton from './ScheduleExportButton';
 import {apiRequest} from '../../lib/client-api';
-import {summarizeSchedules,averageDailyMetrics,averageBtShortage,weeklyHourMetrics,invalidScheduleEntries,isCenterClient} from '../../lib/schedule-summary.mjs';
+import {summarizeSchedules,averageDailyMetrics,averageBtShortage,futureBtShortage,weeklyHourMetrics,invalidScheduleEntries,isCenterClient,isActiveOnDate,currentScheduleDateKey} from '../../lib/schedule-summary.mjs';
 import {WEEKDAYS,DAY_NAMES,parseScheduleTime,formatHours,scheduleCategory} from '../../lib/schedule-time.mjs';
 const dayName=day=>DAY_NAMES[WEEKDAYS.indexOf(day)];
 const categoryName=row=>({bt:'BT',bcba:'BCBA',intern:'Intern',managerhr:'Manager/HR'}[scheduleCategory(row)]);
 const decimal=value=>value.toLocaleString('en-US',{maximumFractionDigits:2});
+const dateLabel=value=>{const date=String(value||'').slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return date;const [year,month,day]=date.split('-');return month+'/'+day+'/'+year;};
 function Shortage({value}){return <span className={`summary-badge ${value?'summary-badge-short':'summary-badge-ok'}`}>{value}</span>;}
 function SummaryTable({headers,children}){return <div className="schedule-group-table-wrap"><table className="schedule-group-table"><thead><tr>{headers.map(label=><th key={label} scope="col">{label}</th>)}</tr></thead><tbody>{children}</tbody></table></div>;}
 function CoverageSection({days,includeInterns=false}){
@@ -27,18 +28,23 @@ export default function OverallScheduleSummary({onUnauthorized,location}){
    .finally(()=>{if(active)setLoading(false);});
   return()=>{active=false;};
  },[refresh]);
- const days=data?summarizeSchedules(data.employees,data.clients):[];
+ const todayKey=currentScheduleDateKey();
+ const activeEmployees=data?data.employees.filter(row=>isActiveOnDate(row,todayKey)):[];
+ const activeCenterClients=data?data.clients.filter(row=>isCenterClient(row)&&isActiveOnDate(row,todayKey)):[];
+ const days=data?summarizeSchedules(data.employees,data.clients,todayKey):[];
  const average=averageDailyMetrics(days);
- const hours=weeklyHourMetrics(days,data?.employees||[]);
- const invalid=data?invalidScheduleEntries(data.employees,data.clients):[];
+ const hours=weeklyHourMetrics(days,activeEmployees);
+ const futureForecast=data?futureBtShortage(data.employees,data.clients,{startDate:todayKey,periodDays:30}):null;
+ const invalid=data?invalidScheduleEntries(data.employees,data.clients,todayKey):[];
  return <section className="overall-summary" aria-busy={loading}>
  <div className="schedule-topbar"><div><h2>Overall Summary</h2><p>Weekly attendance, working hours, and BT coverage from saved schedules.</p></div><div className="schedule-topbar-actions"><ScheduleExportButton kind="summary" employees={data?.employees||[]} clients={data?.clients||[]} location={location} disabled={loading||!data}/><button type="button" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>Refresh Summary</button></div></div>
  {loading&&<p role="status">Loading staff and client schedules…</p>}{error&&<p className="message error-message" role="alert">Could not load summary: {error}</p>}
  {data&&<>
  <div className="summary-totals summary-totals-with-clients">
-  <div className="card summary-stat summary-stat-staff"><span className="summary-stat-label">STAFF ROSTER</span><h3>Total employees</h3><strong>{data.employees.length}</strong><p>BT, BCBA, interns, and Manager/HR</p></div>
-  <div className="card summary-stat summary-stat-clients"><span className="summary-stat-label">CLIENT ROSTER</span><h3>Total clients / kids</h3><strong>{data.clients.filter(isCenterClient).length}</strong><p>In-center schedules</p></div>
-  <div className="card summary-stat summary-stat-coverage"><span className="summary-stat-label">BT ONLY · 10% CALL-OUTS</span><h3>Average BT shortage</h3><strong>{decimal(averageBtShortage(days))}</strong><p>Monday–Friday, including zero-shortage days</p></div>
+  <div className="card summary-stat summary-stat-staff"><span className="summary-stat-label">STAFF ROSTER</span><h3>Total employees</h3><strong>{activeEmployees.length}</strong><p>Currently active BT, BCBA, interns, and Manager/HR</p></div>
+  <div className="card summary-stat summary-stat-clients"><span className="summary-stat-label">CLIENT ROSTER</span><h3>Total clients / kids</h3><strong>{activeCenterClients.length}</strong><p>Currently active in-center clients</p></div>
+  <div className="card summary-stat summary-stat-coverage"><span className="summary-stat-label">BT ONLY · 10% CALL-OUTS</span><h3>Average BT shortage</h3><strong>{decimal(averageBtShortage(days))}</strong><p>Current weekly pattern · active roster today</p></div>
+  <div className="card summary-stat summary-stat-future"><span className="summary-stat-label">BT ONLY · NEXT 30 DAYS</span><h3>Future average BT shortage</h3><strong>{decimal(futureForecast?.average||0)}</strong><p>Weekdays · {dateLabel(futureForecast?.fromDate)} to {dateLabel(futureForecast?.toDate)}</p></div>
   <div className="card summary-stat"><span className="summary-stat-label">WEEKLY HOURS</span><h3>Total staff hours</h3><strong>{formatHours(hours.staffMinutes)}</strong><p>All categories · Max 40 hrs per employee per week</p></div>
   <div className="card summary-stat summary-stat-clients"><span className="summary-stat-label">WEEKLY CLIENT HOURS</span><h3>Total client hours</h3><strong>{formatHours(hours.clientMinutes)}</strong><p>In-center client scheduled hours</p></div>
   <div className="card summary-stat summary-stat-supervisor"><span className="summary-stat-label">20% SUPERVISION</span><h3>Supervisor hours</h3><strong>{formatHours(hours.supervisorMinutes)}</strong><p>20% of total in-center client hours</p></div>
@@ -54,8 +60,8 @@ export default function OverallScheduleSummary({onUnauthorized,location}){
  <CoverageSection days={days}/><CoverageSection days={days} includeInterns/>
  <section className="schedule-section"><div className="schedule-section-head"><div><h3>Hours per staff member</h3><p>Actual entered hours, including overtime. Weekly summary calculations count a maximum of 40 hours per person.</p></div></div>
  <SummaryTable headers={['Staff member','Category',...DAY_NAMES,'Weekly hours']}>
- {!data.employees.length&&<tr><td colSpan={8}>No employee schedules saved.</td></tr>}
- {data.employees.map(employee=>{const times=WEEKDAYS.map(day=>parseScheduleTime(employee[day]));return <tr key={employee.id}><th scope="row">{[employee.first_name,employee.last_name].filter(Boolean).join(' ')}</th><td>{categoryName(employee)}</td>{times.map((time,index)=><td key={WEEKDAYS[index]}>{time.valid?formatHours(time.minutes):<span className="schedule-time-error">Check time</span>}</td>)}<td className="summary-total-cell">{formatHours(times.reduce((sum,time)=>sum+time.minutes,0))}{times.some(time=>!time.valid)&&<small>Incomplete</small>}</td></tr>;})}
+ {!activeEmployees.length&&<tr><td colSpan={8}>No currently active employee schedules.</td></tr>}
+ {activeEmployees.map(employee=>{const times=WEEKDAYS.map(day=>parseScheduleTime(employee[day]));return <tr key={employee.id}><th scope="row">{[employee.first_name,employee.last_name].filter(Boolean).join(' ')}</th><td>{categoryName(employee)}</td>{times.map((time,index)=><td key={WEEKDAYS[index]}>{time.valid?formatHours(time.minutes):<span className="schedule-time-error">Check time</span>}</td>)}<td className="summary-total-cell">{formatHours(times.reduce((sum,time)=>sum+time.minutes,0))}{times.some(time=>!time.valid)&&<small>Incomplete</small>}</td></tr>;})}
  </SummaryTable></section>
  </>}
  </section>;
