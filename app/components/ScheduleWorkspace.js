@@ -43,13 +43,20 @@ function blankRow(category){
     _new:true,
     category,
     first_name:'',last_name:'',assigned_to:'',
-    monday:'',tuesday:'',wednesday:'',thursday:'',friday:'',notes:'',
+    monday:'',tuesday:'',wednesday:'',thursday:'',friday:'',start_date:'',end_date:'',notes:'',
   };
+}
+
+function displayScheduleDate(value){
+  const date=String(value||'').slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return '—';
+  const [year,month,day]=date.split('-');
+  return `${month}/${day}/${year}`;
 }
 
 function matchesSearch(row,search){
   if(!search)return true;
-  const value=[row.first_name,row.last_name,row.notes,...DAY_FIELDS.map(day=>row[day])].join(' ').toLowerCase();
+  const value=[row.first_name,row.last_name,row.start_date,row.end_date,row.notes,...DAY_FIELDS.map(day=>row[day])].join(' ').toLowerCase();
   return value.includes(search.toLowerCase());
 }
 
@@ -277,31 +284,36 @@ function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,dele
         {manager&&totalCount>0&&<button type="button" className="danger schedule-delete-section" disabled={busy} onClick={()=>deleteSection(section)}>Delete All in Section</button>}
       </div>
     </div>
-
     <div className="schedule-group-table-wrap">
       <table className="schedule-group-table">
         <thead><tr>
+          <th>S.No</th>
           <th>First Name</th>
           <th>Last Name</th>
           {DAY_LABELS.map(day=><th key={day}>{day}</th>)}
+          <th>Start Date</th>
+          <th>End Date</th>
           <th>Notes</th>
           {manager&&<th>Actions</th>}
         </tr></thead>
         <tbody>
-          {!rows.length&&<tr><td className="schedule-empty" colSpan={manager?9:8}>{manager?'No entries shown. Use Add to create one.':'No entries in this section.'}</td></tr>}
-          {rows.map(row=><ScheduleRow key={row.id} row={row} manager={manager} editRow={editRow} busy={busy} deleteRow={deleteRow}/>) }
+          {!rows.length&&<tr><td className="schedule-empty" colSpan={manager?12:11}>{manager?'No entries shown. Use Add to create one.':'No entries in this section.'}</td></tr>}
+          {rows.map((row,index)=><ScheduleRow key={row.id} row={row} serialNumber={index+1} manager={manager} editRow={editRow} busy={busy} deleteRow={deleteRow}/>)}
         </tbody>
       </table>
     </div>
   </section>;
 }
 
-function ScheduleRow({row,manager,editRow,busy,deleteRow}){
+function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow}){
   const colors=normalizeDayColors(row.day_colors);
   return <tr>
+    <td className="schedule-serial-number">{serialNumber}</td>
     <td><span className="schedule-person-name">{row.first_name||'—'}</span></td>
     <td><span>{row.last_name||'—'}</span></td>
     {DAY_FIELDS.map((day,index)=>{const time=parseScheduleTime(row[day]);return <td key={day} className={time.valid&&time.minutes===0?'schedule-off-cell':''} title={time.valid&&time.minutes===0?'Not scheduled':undefined}><div className="schedule-display-time" style={{color:colors[day],fontWeight:colors[day]==='#800000'?700:400}}>{time.valid?(normalizedScheduleTime(row[day])?normalizedScheduleTime(row[day]).split('; ').map((range,index)=><span key={index}>{range.replace(/\b0(?=\d:)/g,'').replace(' - ',' – ')}</span>):<span className="schedule-off-label">Not scheduled</span>):<span title={row[day]}>{row[day]}</span>}{!time.valid&&<small className="schedule-time-error">Needs correction</small>}</div></td>;})}
+    <td className="schedule-date-cell">{displayScheduleDate(row.start_date)}</td>
+    <td className="schedule-date-cell">{displayScheduleDate(row.end_date)}</td>
     <td><span className="schedule-display-notes" title={row.notes||''}>{row.notes||'—'}</span></td>
     {manager&&<td><div className="schedule-row-actions"><button type="button" disabled={busy} onClick={()=>editRow(row)}>Edit</button><button type="button" className="danger" disabled={busy} onClick={()=>deleteRow(row)}>Delete</button></div></td>}
   </tr>;
