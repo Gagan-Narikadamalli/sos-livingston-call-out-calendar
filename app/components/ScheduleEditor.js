@@ -8,9 +8,9 @@ function parseDateInput(value,label){
  const text=String(value??'').trim();
  if(!text)return '';
  let year,month,day,match;
- if((match=/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/.exec(text))){month=Number(match[1]);day=Number(match[2]);year=Number(match[3]);}
- else if((match=/^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(text))){year=Number(match[1]);month=Number(match[2]);day=Number(match[3]);}
- else if((match=/^(\\d{2})(\\d{2})(\\d{4})$/.exec(text))){month=Number(match[1]);day=Number(match[2]);year=Number(match[3]);}
+ if((match=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text))){month=Number(match[1]);day=Number(match[2]);year=Number(match[3]);}
+ else if((match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(text))){year=Number(match[1]);month=Number(match[2]);day=Number(match[3]);}
+ else if((match=/^(\d{2})(\d{2})(\d{4})$/.exec(text))){month=Number(match[1]);day=Number(match[2]);year=Number(match[3]);}
  else throw new Error(label+' must use MM/DD/YYYY (example: 12/20/2030).');
  const parsed=new Date(Date.UTC(year,month-1,day));
  if(!year||year<1000||month<1||month>12||day<1||Number.isNaN(parsed.getTime())||parsed.getUTCFullYear()!==year||parsed.getUTCMonth()!==month-1||parsed.getUTCDate()!==day){
