@@ -9,6 +9,31 @@ const kinds=new Set(['employee','client']);
 const no=()=>NextResponse.json({error:'Unauthorized'},{status:401});
 const safe=(value,max=120)=>String(value??'').trim().slice(0,max);
 const validKind=value=>kinds.has(value)?value:null;
+function dateOnly(value){
+  if(!value)return '';
+  if(value instanceof Date&&!Number.isNaN(value.getTime()))return value.toISOString().slice(0,10);
+  const text=String(value).trim();
+  return /^\\d{4}-\\d{2}-\\d{2}/.test(text)?text.slice(0,10):'';
+}
+function readOptionalDate(value,label){
+  const date=String(value??'').trim();
+  if(!date)return {value:null,error:null};
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return {value:null,error:`${label} must be a valid date.`};
+  const parsed=new Date(`${date}T00:00:00.000Z`);
+  if(Number.isNaN(parsed.getTime())||parsed.toISOString().slice(0,10)!==date)return {value:null,error:`${label} must be a valid date.`};
+  return {value:date,error:null};
+}
+function validateDateRange(body){
+  const start=readOptionalDate(body.start_date,'Start Date');
+  const end=readOptionalDate(body.end_date,'End Date');
+  if(start.error)return {error:start.error};
+  if(end.error)return {error:end.error};
+  if(start.value&&end.value&&end.value<start.value)return {error:'End Date must be on or after Start Date.'};
+  return {start_date:start.value,end_date:end.value};
+}
+function serializeScheduleRow(row){
+  return {...row,start_date:dateOnly(row.start_date),end_date:dateOnly(row.end_date)};
+}
 
 async function ensureScheduleTable(sql){
   await sql`create table if not exists weekly_schedules(
@@ -29,6 +54,8 @@ async function ensureScheduleTable(sql){
     updated_at timestamptz default now()
   )`;
   await sql`alter table weekly_schedules add column if not exists day_colors jsonb not null default '{}'::jsonb`;
+  await sql`alter table weekly_schedules add column if not exists start_date date`;
+  await sql`alter table weekly_schedules add column if not exists end_date date`;
   await sql`create index if not exists weekly_schedules_kind_order_idx on weekly_schedules(schedule_kind,display_order,id)`;
 }
 
@@ -44,6 +71,8 @@ function normalizeRow(body,kind,order=0){
     wednesday:normalizedScheduleTime(body.wednesday),
     thursday:normalizedScheduleTime(body.thursday),
     friday:normalizedScheduleTime(body.friday),
+    start_date:dateOnly(body.start_date)||null,
+    end_date:dateOnly(body.end_date)||null,
     notes:safe(body.notes,500),
     day_colors:normalizeDayColors(body.day_colors),
     display_order:Number.isInteger(Number(body.display_order))?Number(body.display_order):order,
@@ -58,12 +87,12 @@ async function handleGET(req){
   await ensureScheduleTable(sql);
   const rows=await sql`
     select id,schedule_kind,category,first_name,last_name,assigned_to,
-      monday,tuesday,wednesday,thursday,friday,notes,day_colors,display_order,created_at,updated_at
+      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,day_colors,display_order,created_at,updated_at
     from weekly_schedules
     where schedule_kind=${kind}
     order by display_order,id
   `;
-  return NextResponse.json(rows);
+  return NextResponse.json(rows.map(serializeScheduleRow));
 }
 
 async function handlePOST(req){
@@ -73,22 +102,24 @@ async function handlePOST(req){
   const invalidDay=WEEKDAYS.find(day=>!parseScheduleTime(body[day]).valid);
   if(invalidDay)return NextResponse.json({error:`${invalidDay}: ${parseScheduleTime(body[invalidDay]).error}`},{status:400});
   if(!kind)return NextResponse.json({error:'Invalid schedule type.'},{status:400});
+  const dates=validateDateRange(body);
+  if(dates.error)return NextResponse.json({error:dates.error},{status:400});
   const sql=await db();
   await ensureScheduleTable(sql);
 
-  const row=normalizeRow(body,kind,0);
+  const row=normalizeRow({...body,...dates},kind,0);
   if(!row.first_name)return NextResponse.json({error:'A first name or client/kid name is required.'},{status:400});
   const maxRows=await sql`select coalesce(max(display_order),-1)+1 as next from weekly_schedules where schedule_kind=${kind}`;
   const created=await sql`
     insert into weekly_schedules(
       schedule_kind,category,first_name,last_name,assigned_to,
-      monday,tuesday,wednesday,thursday,friday,notes,day_colors,display_order
+      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,day_colors,display_order
     ) values(
       ${kind},${row.category},${row.first_name},${row.last_name||''},${row.assigned_to||''},
-      ${row.monday||''},${row.tuesday||''},${row.wednesday||''},${row.thursday||''},${row.friday||''},${row.notes||''},${sql.json(row.day_colors)},${Number(maxRows[0]?.next||0)}
+      ${row.monday||''},${row.tuesday||''},${row.wednesday||''},${row.thursday||''},${row.friday||''},${row.start_date},${row.end_date},${row.notes||''},${sql.json(row.day_colors)},${Number(maxRows[0]?.next||0)}
     ) returning *
   `;
-  return NextResponse.json(created[0]);
+  return NextResponse.json(serializeScheduleRow(created[0]));
 }
 
 async function handlePATCH(req){
@@ -98,7 +129,9 @@ async function handlePATCH(req){
   const invalidDay=WEEKDAYS.find(day=>!parseScheduleTime(body[day]).valid);
   if(invalidDay)return NextResponse.json({error:`${invalidDay}: ${parseScheduleTime(body[invalidDay]).error}`},{status:400});
   if(!Number.isInteger(id)||id<1||!kind)return NextResponse.json({error:'Invalid schedule row.'},{status:400});
-  const row=normalizeRow(body,kind,0);
+  const dates=validateDateRange(body);
+  if(dates.error)return NextResponse.json({error:dates.error},{status:400});
+  const row=normalizeRow({...body,...dates},kind,0);
   if(!row.first_name)return NextResponse.json({error:'A first name or client/kid name is required.'},{status:400});
   const sql=await db();
   await ensureScheduleTable(sql);
@@ -106,11 +139,11 @@ async function handlePATCH(req){
     update weekly_schedules set
       category=${row.category},first_name=${row.first_name},last_name=${row.last_name||''},assigned_to=${row.assigned_to||''},
       monday=${row.monday||''},tuesday=${row.tuesday||''},wednesday=${row.wednesday||''},thursday=${row.thursday||''},friday=${row.friday||''},
-      notes=${row.notes||''},day_colors=coalesce(${body.day_colors===undefined?null:sql.json(row.day_colors)},day_colors),updated_at=now()
+      start_date=${row.start_date},end_date=${row.end_date},notes=${row.notes||''},day_colors=coalesce(${body.day_colors===undefined?null:sql.json(row.day_colors)},day_colors),updated_at=now()
     where id=${id} and schedule_kind=${kind}
     returning *
   `;
-  return updated.length?NextResponse.json(updated[0]):NextResponse.json({error:'Schedule row not found.'},{status:404});
+  return updated.length?NextResponse.json(serializeScheduleRow(updated[0])):NextResponse.json({error:'Schedule row not found.'},{status:404});
 }
 
 async function handleDELETE(req){
