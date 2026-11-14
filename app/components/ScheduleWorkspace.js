@@ -285,7 +285,7 @@ function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,dele
       </div>
     </div>
     <div className="schedule-group-table-wrap">
-      <table className="schedule-group-table">
+      <table className={`schedule-group-table ${manager?"schedule-manager-table":"schedule-team-table"}`}>
         <thead><tr>
           <th>S.No</th>
           <th>First Name</th>
@@ -314,7 +314,7 @@ function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow}){
     {DAY_FIELDS.map((day,index)=>{const time=parseScheduleTime(row[day]);return <td key={day} className={time.valid&&time.minutes===0?'schedule-off-cell':''} title={time.valid&&time.minutes===0?'Not scheduled':undefined}><div className="schedule-display-time" style={{color:colors[day],fontWeight:colors[day]==='#800000'?700:400}}>{time.valid?(normalizedScheduleTime(row[day])?normalizedScheduleTime(row[day]).split('; ').map((range,index)=><span key={index}>{range.replace(/\b0(?=\d:)/g,'').replace(' - ',' – ')}</span>):<span className="schedule-off-label">Not scheduled</span>):<span title={row[day]}>{row[day]}</span>}{!time.valid&&<small className="schedule-time-error">Needs correction</small>}</div></td>;})}
     <td className="schedule-date-cell">{displayScheduleDate(row.start_date)}</td>
     <td className="schedule-date-cell">{displayScheduleDate(row.end_date)}</td>
-    <td><span className="schedule-display-notes" title={row.notes||''}>{row.notes||'—'}</span></td>
+    <td className="schedule-notes-cell"><span className="schedule-display-notes" title={row.notes||''}>{row.notes||'—'}</span></td>
     {manager&&<td><div className="schedule-row-actions"><button type="button" disabled={busy} onClick={()=>editRow(row)}>Edit</button><button type="button" className="danger" disabled={busy} onClick={()=>deleteRow(row)}>Delete</button></div></td>}
   </tr>;
 }
