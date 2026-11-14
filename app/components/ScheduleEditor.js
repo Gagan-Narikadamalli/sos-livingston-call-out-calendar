@@ -15,6 +15,7 @@ export default function ScheduleEditor({row,kind,onSave,onClose}){
  const [bulkFeedback,setBulkFeedback]=useState('');
  const [bulkReset,setBulkReset]=useState({});
  const dialog=useRef(null);
+ const startDateInput=useRef(null),endDateInput=useRef(null);
  const noun=kind==='employee'?'staff member':'client / kid';
  useEffect(()=>{
   const node=dialog.current;const previous=document.activeElement;
@@ -23,6 +24,11 @@ export default function ScheduleEditor({row,kind,onSave,onClose}){
   return()=>{node.close();document.body.style.overflow=original;previous?.focus?.();};
  },[]);
  function update(field,value){setDraft(current=>({...current,[field]:value}));setError('');setBulkFeedback('');}
+ function openDatePicker(inputRef){
+  const input=inputRef.current;
+  if(typeof input?.showPicker==='function')input.showPicker();
+  else{input?.focus();input?.click();}
+ }
  function toggleBulkDay(day,checked){
   setBulkDays(current=>WEEKDAYS.filter(item=>item===day?checked:current.includes(item)));
   setBulkFeedback('');
@@ -37,8 +43,10 @@ export default function ScheduleEditor({row,kind,onSave,onClose}){
  }
  async function save(event){
   event.preventDefault();if(saving)return;
+  const startDate=String(draft.start_date||'').slice(0,10),endDate=String(draft.end_date||'').slice(0,10);
+  if(startDate&&endDate&&endDate<startDate){setError('End Date must be on or after Start Date.');return;}
   setSaving(true);setError('');
-  try{await onSave(draft);}catch(error){setError(error.message);setSaving(false);}
+  try{await onSave({...draft,start_date:startDate,end_date:endDate});}catch(error){setError(error.message);setSaving(false);}
  }
  const times=WEEKDAYS.map(day=>parseScheduleTime(draft[day]));
  return <dialog ref={dialog} className="schedule-editor" aria-labelledby="schedule-editor-title" onCancel={event=>{event.preventDefault();if(!saving)onClose();}}>
@@ -49,6 +57,8 @@ export default function ScheduleEditor({row,kind,onSave,onClose}){
     <label className="field"><b>First name <span aria-hidden="true">*</span></b><input required maxLength={120} autoFocus value={draft.first_name||''} onChange={event=>update('first_name',event.target.value)}/></label>
     <label className="field"><b>Last name</b><input maxLength={120} value={draft.last_name||''} onChange={event=>update('last_name',event.target.value)}/></label>
     <label className="field"><b>Category</b><select value={draft.category} onChange={event=>update('category',event.target.value)}>{(kind==='employee'?[['Employee','BT'],['BCBA','BCBA'],['Manager/HR','Manager/HR'],['Intern','Intern']]:[['Client/Kid','In-center client'],['Home Client','Home client']]).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+    <label className="field schedule-date-field"><b>Start Date <span>Optional</span></b><div className="schedule-date-input-wrap"><input ref={startDateInput} type="date" value={String(draft.start_date||'').slice(0,10)} onChange={event=>update('start_date',event.target.value)} aria-label="Optional start date"/><button type="button" onClick={()=>openDatePicker(startDateInput)} aria-label="Open start date calendar" title="Open calendar">📅</button></div></label>
+    <label className="field schedule-date-field"><b>End Date <span>Optional</span></b><div className="schedule-date-input-wrap"><input ref={endDateInput} type="date" value={String(draft.end_date||'').slice(0,10)} onChange={event=>update('end_date',event.target.value)} aria-label="Optional end date"/><button type="button" onClick={()=>openDatePicker(endDateInput)} aria-label="Open end date calendar" title="Open calendar">📅</button></div></label>
    </div>
    <div className="schedule-editor-hours-heading"><h3>Weekly hours</h3><span>{formatHours(times.reduce((sum,time)=>sum+time.minutes,0))} hrs total{times.some(time=>!time.valid)?' · check times':''}</span></div>
    <p className="schedule-editor-hint">Set the same hours for several days, or edit each day below. You can still add split shifts individually.</p>
