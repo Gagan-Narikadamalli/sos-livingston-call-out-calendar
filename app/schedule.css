@@ -312,3 +312,10 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
   .schedule-sections .schedule-display-section .schedule-manager-table,
   .schedule-sections .schedule-display-section .schedule-team-table{min-width:1480px;table-layout:fixed}
 }
+
+/* Date fields accept typed MM/DD/YYYY values while keeping the native calendar picker. */
+.schedule-editor .schedule-date-input-wrap{position:relative;grid-template-columns:minmax(0,1fr) 38px}
+.schedule-editor .schedule-date-input-wrap input.schedule-date-text{box-sizing:border-box;width:100%;min-width:0;min-height:40px;padding:8px 9px;border:1px solid #cbd9e4;border-radius:8px;background:#fff;color:#17305e;font-size:13px;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.schedule-editor .schedule-date-input-wrap input.schedule-date-text:focus{outline:2px solid #45b8cf35;border-color:#14778c}
+.schedule-editor .schedule-date-input-wrap input.schedule-date-text::placeholder{color:#8293a2;opacity:1}
+.schedule-editor .schedule-date-input-wrap input.schedule-native-date-picker{position:absolute!important;right:42px;bottom:0;width:1px!important;height:1px!important;min-width:1px!important;min-height:1px!important;padding:0!important;border:0!important;opacity:0!important;pointer-events:none!important}
