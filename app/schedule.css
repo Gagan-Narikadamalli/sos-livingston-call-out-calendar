@@ -206,3 +206,39 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .schedule-editor-bulk-apply:disabled{opacity:.55;cursor:not-allowed}
 .schedule-editor-bulk-feedback{margin:10px 0 0;color:#176277;font-size:12px;font-weight:700}
 @media(max-width:600px){.schedule-editor-bulk{padding:13px 12px}.schedule-editor-bulk-controls{gap:10px}.schedule-editor-bulk-time{flex:1 1 110px}.schedule-editor-bulk-days{flex:1 1 100%}.schedule-editor-bulk-apply{width:100%}}
+
+
+/* Optional employment dates and serial-number columns in weekly schedules. */
+.schedule-sections .schedule-display-section .schedule-group-table{min-width:1480px}
+.schedule-sections .schedule-display-section .schedule-group-table th:nth-child(1),
+.schedule-sections .schedule-display-section .schedule-group-table td:nth-child(1){width:60px!important;min-width:60px}
+.schedule-sections .schedule-display-section .schedule-group-table th:nth-child(2),
+.schedule-sections .schedule-display-section .schedule-group-table td:nth-child(2){width:110px!important;min-width:110px}
+.schedule-sections .schedule-display-section .schedule-group-table th:nth-child(3),
+.schedule-sections .schedule-display-section .schedule-group-table td:nth-child(3){width:110px!important;min-width:110px}
+.schedule-sections .schedule-display-section .schedule-group-table th:nth-child(9),
+.schedule-sections .schedule-display-section .schedule-group-table td:nth-child(9),
+.schedule-sections .schedule-display-section .schedule-group-table th:nth-child(10),
+.schedule-sections .schedule-display-section .schedule-group-table td:nth-child(10){width:135px!important;min-width:135px}
+.schedule-sections .schedule-display-section .schedule-group-table th:nth-child(11),
+.schedule-sections .schedule-display-section .schedule-group-table td:nth-child(11){width:160px!important;min-width:160px}
+.schedule-sections .schedule-display-section .schedule-group-table th:nth-child(12),
+.schedule-sections .schedule-display-section .schedule-group-table td:nth-child(12){width:140px!important;min-width:140px}
+.schedule-sections .schedule-display-section .schedule-group-table th:nth-child(1),
+.schedule-sections .schedule-display-section .schedule-group-table td:nth-child(1){position:sticky;left:0;z-index:3}
+.schedule-sections .schedule-display-section .schedule-group-table th:nth-child(2),
+.schedule-sections .schedule-display-section .schedule-group-table td:nth-child(2){position:sticky;left:60px;z-index:3}
+.schedule-sections .schedule-display-section .schedule-group-table th:nth-child(3),
+.schedule-sections .schedule-display-section .schedule-group-table td:nth-child(3){position:sticky;left:170px;z-index:3;box-shadow:3px 0 5px #17305e08}
+.schedule-sections .schedule-display-section .schedule-group-table thead th:nth-child(-n+3){z-index:4}
+.schedule-serial-number{text-align:center;font-weight:800;color:#607687}
+.schedule-date-cell{white-space:nowrap;font-size:12px;color:#34546b}
+
+.schedule-editor-details{grid-template-columns:repeat(5,minmax(0,1fr))}
+.schedule-editor .schedule-date-field{min-width:0}
+.schedule-editor .schedule-date-field>b span{display:inline-block;margin-left:4px;color:#8293a2;font-size:10px;font-weight:600}
+.schedule-date-input-wrap{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:5px;align-items:center;min-width:0}
+.schedule-editor .schedule-date-input-wrap input[type=date]{min-width:0;padding:8px 5px;min-height:40px;font-size:12px}
+.schedule-editor .schedule-date-input-wrap button{width:38px;min-height:40px;padding:0;border:1px solid #cbd9e4;border-radius:8px;background:#eaf5f6;color:#166679;box-shadow:none;font-size:17px}
+@media(max-width:900px){.schedule-editor-details{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.schedule-editor-details{grid-template-columns:1fr}}
