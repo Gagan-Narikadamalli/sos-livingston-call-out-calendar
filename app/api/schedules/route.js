@@ -13,12 +13,12 @@ function dateOnly(value){
   if(!value)return '';
   if(value instanceof Date&&!Number.isNaN(value.getTime()))return value.toISOString().slice(0,10);
   const text=String(value).trim();
-  return /^\\d{4}-\\d{2}-\\d{2}/.test(text)?text.slice(0,10):'';
+  return /^\d{4}-\d{2}-\d{2}/.test(text)?text.slice(0,10):'';
 }
 function readOptionalDate(value,label){
   const date=String(value??'').trim();
   if(!date)return {value:null,error:null};
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return {value:null,error:`${label} must be a valid date.`};
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return {value:null,error:`${label} must be a valid date.`};
   const parsed=new Date(`${date}T00:00:00.000Z`);
   if(Number.isNaN(parsed.getTime())||parsed.toISOString().slice(0,10)!==date)return {value:null,error:`${label} must be a valid date.`};
   return {value:date,error:null};
