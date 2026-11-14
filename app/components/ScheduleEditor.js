@@ -60,6 +60,7 @@ export default function ScheduleEditor({row,kind,onSave,onClose}){
     <label className="field schedule-date-field"><b>Start Date <span>Optional</span></b><div className="schedule-date-input-wrap"><input ref={startDateInput} type="date" value={String(draft.start_date||'').slice(0,10)} onChange={event=>update('start_date',event.target.value)} aria-label="Optional start date"/><button type="button" onClick={()=>openDatePicker(startDateInput)} aria-label="Open start date calendar" title="Open calendar">📅</button></div></label>
     <label className="field schedule-date-field"><b>End Date <span>Optional</span></b><div className="schedule-date-input-wrap"><input ref={endDateInput} type="date" value={String(draft.end_date||'').slice(0,10)} onChange={event=>update('end_date',event.target.value)} aria-label="Optional end date"/><button type="button" onClick={()=>openDatePicker(endDateInput)} aria-label="Open end date calendar" title="Open calendar">📅</button></div></label>
    </div>
+   <p className="schedule-editor-hint schedule-editor-date-hint">Leave Start Date blank if they are already active. Leave End Date blank if there is no planned end date.</p>
    <div className="schedule-editor-hours-heading"><h3>Weekly hours</h3><span>{formatHours(times.reduce((sum,time)=>sum+time.minutes,0))} hrs total{times.some(time=>!time.valid)?' · check times':''}</span></div>
    <p className="schedule-editor-hint">Set the same hours for several days, or edit each day below. You can still add split shifts individually.</p>
    <div className="schedule-editor-bulk">
