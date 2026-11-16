@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {hasScheduledHours,qualifiesForCoverage,summarizeSchedules,averageDailyMetrics,averageBtShortage,weeklyHourMetrics,cappedWeeklyStaffMinutes,invalidScheduleEntries} from '../lib/schedule-summary.mjs';
+import {hasScheduledHours,qualifiesForCoverage,summarizeSchedules,averageDailyMetrics,averageBtShortage,futureBtShortage,weeklyHourMetrics,cappedWeeklyStaffMinutes,invalidScheduleEntries} from '../lib/schedule-summary.mjs';
 import {parseScheduleTime,normalizedScheduleTime,serializeRanges} from '../lib/schedule-time.mjs';
 test('blank/off days are not availability; malformed times are flagged',()=>{
  for(const value of ['',null,'  ','Off','N/A','—','---','PTO','not working'])assert.equal(hasScheduledHours(value),false);
@@ -127,4 +127,39 @@ test('45 hours count as 40, 35 stays 35 and split-shift minutes are respected',(
  assert.equal(cappedWeeklyStaffMinutes(employees),75*60);
  assert.equal(cappedWeeklyStaffMinutes([{monday:'8-12;1-6'}]),9*60);
  assert.equal(cappedWeeklyStaffMinutes([{monday:'bad',tuesday:'8-4'}]),8*60);
+});
+
+test('future BT shortage counts all hires active at the end of the 30-day window and rounds to a whole person',()=>{
+ const weekdays={monday:'9-5',tuesday:'9-5',wednesday:'9-5',thursday:'9-5',friday:'9-5'};
+ const employees=[
+  ...Array.from({length:10},()=>({category:'Employee',...weekdays})),
+  {category:'Employee',start_date:'2026-11-15',...weekdays},
+  {category:'Employee',start_date:'2026-11-22',...weekdays}
+ ];
+ const clients=Array.from({length:11},()=>({category:'Client/Kid',...weekdays}));
+ const forecast=futureBtShortage(employees,clients,{startDate:'2026-11-01',periodDays:30});
+ assert.equal(forecast.projectionDate,'2026-11-30');
+ assert.equal(forecast.shortage,1);
+ assert.equal(forecast.weekdayCount,5);
+ assert.ok(forecast.days.every(day=>day.staff===12&&day.callOuts===2&&day.remaining===10&&day.shortage===1));
+});
+test('future BT projection excludes staff and clients whose end dates have passed',()=>{
+ const weekdays={monday:'9-5',tuesday:'9-5',wednesday:'9-5',thursday:'9-5',friday:'9-5'};
+ const employees=[
+  ...Array.from({length:10},(_,index)=>({category:'Employee',...(index===0?{end_date:'2026-11-29'}:{}),...weekdays})),
+  {category:'Employee',start_date:'2026-11-15',...weekdays}
+ ];
+ const clients=[
+  ...Array.from({length:10},(_,index)=>({category:'Client/Kid',...(index===0?{end_date:'2026-11-29'}:{}),...weekdays}))
+ ];
+ const forecast=futureBtShortage(employees,clients,{startDate:'2026-11-01',periodDays:30});
+ assert.ok(forecast.days.every(day=>day.staff===10&&day.clients===10));
+ assert.equal(forecast.shortage,1);
+});
+test('future BT projection rounds the projected five-day average to the nearest whole person',()=>{
+ const employees=[{category:'Employee',monday:'9-5',tuesday:'9-5',wednesday:'9-5'}];
+ const clients=[{monday:'9-5'},{tuesday:'9-5'},{wednesday:'9-5'}];
+ const forecast=futureBtShortage(employees,clients,{startDate:'2026-11-01',periodDays:30});
+ assert.equal(forecast.days.reduce((sum,day)=>sum+day.shortage,0)/5,0.6);
+ assert.equal(forecast.shortage,1);
 });
