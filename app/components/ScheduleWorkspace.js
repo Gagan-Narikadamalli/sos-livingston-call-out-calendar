@@ -51,7 +51,7 @@ function blankRow(category){
     _new:true,
     category,
     first_name:'',last_name:'',assigned_to:'',
-    monday:'',tuesday:'',wednesday:'',thursday:'',friday:'',start_date:'',end_date:'',notes:'',
+    monday:'',tuesday:'',wednesday:'',thursday:'',friday:'',start_date:'',end_date:'',notes:'',phone_number:'',email:'',
   };
 }
 
@@ -64,7 +64,7 @@ function displayScheduleDate(value){
 
 function matchesSearch(row,search){
   if(!search)return true;
-  const value=[row.first_name,row.last_name,row.start_date,row.end_date,row.notes,...DAY_FIELDS.map(day=>row[day])].join(' ').toLowerCase();
+  const value=[row.first_name,row.last_name,row.start_date,row.end_date,row.notes,row.phone_number,row.email,...DAY_FIELDS.map(day=>row[day])].join(' ').toLowerCase();
   return value.includes(search.toLowerCase());
 }
 
@@ -263,7 +263,7 @@ export default function ScheduleWorkspace({manager=false,location}){
         </div>
         <div className="schedule-topbar-actions">
           {manager&&<ScheduleExportButton kind={kind} employees={kind==='employee'?rows:[]} clients={kind==='client'?rows:[]} location={location} disabled={loading||busy}/>}
-          <input aria-label="Search schedule" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search name, hours, notes…"/>
+          <input aria-label="Search schedule" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search name, hours, contact…"/>
           {manager&&<button type="button" className="danger schedule-clear-all" disabled={busy||loading} onClick={clearSchedule}>Clear Entire Schedule</button>}
         </div>
       </div>
@@ -324,10 +324,10 @@ function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,dele
           <th>Start Date</th>
           <th>End Date</th>
           <th>Notes</th>
-          {manager&&<th>Actions</th>}
+          {manager&&<><th>Phone Number</th><th>Email</th><th>Actions</th></>}
         </tr></thead>
         <tbody>
-          {!rows.length&&<tr><td className="schedule-empty" colSpan={manager?12:11}>{manager?'No entries shown. Use Add to create one.':'No entries in this section.'}</td></tr>}
+          {!rows.length&&<tr><td className="schedule-empty" colSpan={manager?14:11}>{manager?'No entries shown. Use Add to create one.':'No entries in this section.'}</td></tr>}
           {rows.map((row,index)=><ScheduleRow key={row.id} row={row} serialNumber={index+1} manager={manager} editRow={editRow} busy={busy} deleteRow={deleteRow} now={now} finalizeRow={finalizeRow}/>)}
         </tbody>
       </table>
@@ -346,6 +346,7 @@ function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow,now,finali
     <td className="schedule-date-cell">{displayScheduleDate(row.start_date)}</td>
     <td className="schedule-date-cell">{displayScheduleDate(row.end_date)}</td>
     <td className="schedule-notes-cell"><span className="schedule-display-notes" title={row.notes||''}>{row.notes||'—'}</span></td>
+    {manager&&<><td className="schedule-contact-cell" title={row.phone_number||''}>{row.phone_number||'—'}</td><td className="schedule-contact-cell" title={row.email||''}>{row.email?<a href={`mailto:${row.email}`}>{row.email}</a>:'—'}</td></>}
     {manager&&<td><div className="schedule-row-actions"><button type="button" disabled={busy} onClick={()=>editRow(row)}>Edit</button><button type="button" className="danger" disabled={busy} onClick={()=>deleteRow(row)}>Delete</button></div></td>}
   </tr>;
 }
