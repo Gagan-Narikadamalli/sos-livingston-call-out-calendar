@@ -319,3 +319,12 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .schedule-editor .schedule-date-input-wrap input.schedule-date-text:focus{outline:2px solid #45b8cf35;border-color:#14778c}
 .schedule-editor .schedule-date-input-wrap input.schedule-date-text::placeholder{color:#8293a2;opacity:1}
 .schedule-editor .schedule-date-input-wrap input.schedule-native-date-picker{position:absolute!important;right:42px;bottom:0;width:1px!important;height:1px!important;min-width:1px!important;min-height:1px!important;padding:0!important;border:0!important;opacity:0!important;pointer-events:none!important}
+
+
+/* Compact NEW marker for recently added staff and clients. */
+.schedule-name-wrap{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;max-width:100%}
+.schedule-new-badge{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;padding:2px 7px;border:1px solid #690019;border-radius:999px;background:#800020;color:#fff3dc;font-size:9px;line-height:1.35;font-weight:900;letter-spacing:.06em;white-space:nowrap;vertical-align:middle;box-shadow:0 1px 2px #80002020}
+button.schedule-new-badge{font-family:inherit;cursor:pointer}
+button.schedule-new-badge:hover:not(:disabled){background:#650019;border-color:#500013}
+button.schedule-new-badge:disabled{opacity:.65;cursor:wait}
+button.schedule-new-badge:focus-visible{outline:2px solid #b88a4b;outline-offset:2px}
