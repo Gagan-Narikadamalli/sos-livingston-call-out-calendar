@@ -56,6 +56,7 @@ async function ensureScheduleTable(sql){
   await sql`alter table weekly_schedules add column if not exists day_colors jsonb not null default '{}'::jsonb`;
   await sql`alter table weekly_schedules add column if not exists start_date date`;
   await sql`alter table weekly_schedules add column if not exists end_date date`;
+  await sql`alter table weekly_schedules add column if not exists finalized_at timestamptz`;
   await sql`create index if not exists weekly_schedules_kind_order_idx on weekly_schedules(schedule_kind,display_order,id)`;
 }
 
@@ -87,7 +88,7 @@ async function handleGET(req){
   await ensureScheduleTable(sql);
   const rows=await sql`
     select id,schedule_kind,category,first_name,last_name,assigned_to,
-      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,day_colors,display_order,created_at,updated_at
+      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,day_colors,display_order,created_at,updated_at,finalized_at
     from weekly_schedules
     where schedule_kind=${kind}
     order by display_order,id
@@ -125,6 +126,24 @@ async function handlePOST(req){
 async function handlePATCH(req){
   if(!authorized(req))return no();
   const body=await req.json();
+  if(body.action==='finalize'){
+    const finalizeId=Number(body.id);
+    const finalizeKind=validKind(body.kind);
+    if(!Number.isInteger(finalizeId)||finalizeId<1||!finalizeKind){
+      return NextResponse.json({error:'Invalid schedule row.'},{status:400});
+    }
+    const sql=await db();
+    await ensureScheduleTable(sql);
+    const finalized=await sql`
+      update weekly_schedules
+      set finalized_at=coalesce(finalized_at,now()),updated_at=now()
+      where id=${finalizeId} and schedule_kind=${finalizeKind}
+      returning *
+    `;
+    return finalized.length
+      ?NextResponse.json(serializeScheduleRow(finalized[0]))
+      :NextResponse.json({error:'Schedule row not found.'},{status:404});
+  }
   const id=Number(body.id),kind=validKind(body.kind);
   const invalidDay=WEEKDAYS.find(day=>!parseScheduleTime(body[day]).valid);
   if(invalidDay)return NextResponse.json({error:`${invalidDay}: ${parseScheduleTime(body[invalidDay]).error}`},{status:400});
