@@ -323,8 +323,8 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 
 /* Compact NEW marker for recently added staff and clients. */
 .schedule-name-wrap{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;max-width:100%}
-.schedule-new-badge{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:31px;padding:5px 10px;border:0;border-radius:0;background:#fff3dc;color:#800020;font-size:9px;line-height:1;font-weight:950;letter-spacing:.06em;white-space:nowrap;vertical-align:middle;transform:rotate(-16deg);transform-origin:center;clip-path:polygon(12% 38%,9% 29%,11% 18%,18% 10%,28% 9%,36% 15%,41% 7%,51% 4%,61% 9%,66% 17%,75% 11%,85% 14%,91% 24%,89% 36%,96% 44%,96% 58%,90% 68%,89% 79%,81% 88%,68% 88%,60% 95%,48% 96%,38% 90%,26% 92%,16% 85%,11% 75%,13% 64%,5% 57%,5% 46%);filter:drop-shadow(0 0 1.3px #800020) drop-shadow(0 1px 0 #800020)}
+.schedule-new-badge{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:31px;padding:5px 10px;border:0;border-radius:0;background:#800020;color:#fff3dc;font-size:9px;line-height:1;font-weight:950;letter-spacing:.06em;white-space:nowrap;vertical-align:middle;transform:rotate(-16deg);transform-origin:center;clip-path:polygon(12% 38%,9% 29%,11% 18%,18% 10%,28% 9%,36% 15%,41% 7%,51% 4%,61% 9%,66% 17%,75% 11%,85% 14%,91% 24%,89% 36%,96% 44%,96% 58%,90% 68%,89% 79%,81% 88%,68% 88%,60% 95%,48% 96%,38% 90%,26% 92%,16% 85%,11% 75%,13% 64%,5% 57%,5% 46%);filter:drop-shadow(0 0 1.3px #800020) drop-shadow(0 1px 0 #800020)}
 button.schedule-new-badge{font-family:inherit;cursor:pointer}
-button.schedule-new-badge:hover:not(:disabled){background:#f4e4c8;color:#650019}
+button.schedule-new-badge:hover:not(:disabled){background:#650019;color:#fff3dc}
 button.schedule-new-badge:disabled{opacity:.65;cursor:wait}
 button.schedule-new-badge:focus-visible{outline:2px solid #b88a4b;outline-offset:2px}
