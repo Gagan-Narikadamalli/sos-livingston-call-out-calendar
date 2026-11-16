@@ -348,3 +348,10 @@ button.schedule-new-badge:focus-visible{outline:2px solid #b88a4b;outline-offset
 .schedule-sections .schedule-display-section .schedule-manager-table .schedule-contact-cell{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .schedule-sections .schedule-display-section .schedule-manager-table .schedule-contact-cell a{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#245d79;text-decoration:none}
 .schedule-sections .schedule-display-section .schedule-manager-table .schedule-contact-cell a:hover{text-decoration:underline}
+
+
+/* Keep the added staff contact columns readable in the manager summary. */
+.overall-summary .schedule-section:last-child .schedule-group-table{min-width:1180px}
+.overall-summary .schedule-contact-cell{min-width:145px!important;white-space:nowrap}
+.overall-summary .schedule-contact-cell a{color:#245d79;text-decoration:none}
+.overall-summary .schedule-contact-cell a:hover{text-decoration:underline}
