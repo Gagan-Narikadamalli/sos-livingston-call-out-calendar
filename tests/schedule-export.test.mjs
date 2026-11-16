@@ -3,20 +3,44 @@ import {test} from 'node:test';
 import ExcelJS from 'exceljs';
 import {buildScheduleExport} from '../lib/schedule-export-data.mjs';
 import {createScheduleWorkbook} from '../lib/schedule-excel.mjs';
-const employees=[{id:1,first_name:'Alex',last_name:'Staff',category:'Employee',monday:'8-4',notes:'Split schedule notes'},{id:2,first_name:'HR',category:'Manager/HR',monday:'9-5'}];
-const clients=[{id:3,first_name:'Center',monday:'8-4'},{id:4,first_name:'Home',category:'Home Client',monday:'9-5'},{id:5,first_name:'Short',monday:'8-11'}];
-test('separate schedule exports preserve full names, category, notes, timing and hours',()=>{
- const staff=buildScheduleExport('employee',employees,clients);assert.equal(staff.length,1);assert.equal(staff[0].rows.length,2);
- assert.equal(staff[0].rows[0][2],'8:00 AM to 4:00 PM');assert.equal(staff[0].rows[0][7],'Split schedule notes');assert.equal(staff[0].headers.length,8);assert.ok(!staff[0].headers.some(header=>header.includes('Hours')));
- assert.equal(staff[0].groups.find(group=>group.title==='Manager/HR').rows[0][0],'HR');
- const kids=buildScheduleExport('client',employees,clients);assert.equal(kids[0].rows.length,3);assert.equal(kids[0].groups.find(group=>group.title==='Home clients').rows.length,1);
+const employees=[
+ {id:1,first_name:'Alex',last_name:'Staff',category:'Employee',monday:'8-4',notes:'Split schedule notes',phone_number:'(973) 555-0101',email:'alex@example.com'},
+ {id:2,first_name:'HR',category:'Manager/HR',monday:'9-5'}
+];
+const clients=[
+ {id:3,first_name:'Center',monday:'8-4',phone_number:'(973) 555-0201',email:'center@example.com'},
+ {id:4,first_name:'Home',category:'Home Client',monday:'9-5'},
+ {id:5,first_name:'Short',monday:'8-11'}
+];
+test('separate schedule exports preserve names, timing, notes and contact details',()=>{
+ const staff=buildScheduleExport('employee',employees,clients);
+ assert.equal(staff.length,1);assert.equal(staff[0].rows.length,2);
+ assert.equal(staff[0].rows[0][1],'Alex');assert.equal(staff[0].rows[0][2],'Staff');
+ assert.equal(staff[0].rows[0][3],'8:00 AM to 4:00 PM');
+ assert.equal(staff[0].rows[0][10],'Split schedule notes');
+ assert.equal(staff[0].rows[0][11],'(973) 555-0101');
+ assert.equal(staff[0].rows[0][12],'alex@example.com');
+ assert.deepEqual(staff[0].headers.slice(-2),['Phone Number','Email']);
+ assert.equal(staff[0].headers.length,13);
+ assert.ok(!staff[0].headers.some(header=>header.includes('Hours')));
+ assert.equal(staff[0].groups.find(group=>group.title==='Manager/HR').rows[0][1],'HR');
+
+ const kids=buildScheduleExport('client',employees,clients);
+ assert.equal(kids[0].rows.length,3);
+ assert.equal(kids[0].groups.find(group=>group.title==='Home clients').rows.length,1);
+ const center=kids[0].groups.find(group=>group.title==='In-center clients').rows[0];
+ assert.equal(center[11],'(973) 555-0201');assert.equal(center[12],'center@example.com');
 });
-test('summary export matches daily averages and coverage population without home clients',()=>{
+test('summary export retains its metrics and includes staff contact details in Staff Hours',()=>{
  const sheets=buildScheduleExport('summary',employees,clients);
  assert.equal(sheets.find(sheet=>sheet.name==='Daily Summary').rows.at(-1)[0],'Average');
  assert.equal(sheets.find(sheet=>sheet.name==='Daily Summary').rows[0].at(-1),11);
  assert.equal(sheets.find(sheet=>sheet.name==='BT Coverage').rows[0][2],1);
- assert.equal(sheets.find(sheet=>sheet.name==='Staff Hours').rows.length,2);
+ const staff=sheets.find(sheet=>sheet.name==='Staff Hours');
+ assert.equal(staff.rows.length,2);
+ assert.deepEqual(staff.headers.slice(0,4),['Staff Member','Category','Phone Number','Email']);
+ assert.equal(staff.rows[0][2],'(973) 555-0101');
+ assert.equal(staff.rows[0][3],'alex@example.com');
 });
 test('all three exports roundtrip as native xlsx with numbers, sheets and formatting',async()=>{
  for(const kind of ['employee','client','summary']){
@@ -26,24 +50,34 @@ test('all three exports roundtrip as native xlsx with numbers, sheets and format
   assert.equal(read.worksheets.length,kind==='summary'?1:buildScheduleExport(kind,employees,clients).length);
   assert.ok(read.worksheets[0].getCell('A1').value.includes('Test Clinic'));
   assert.equal(read.worksheets[0].views[0].ySplit,kind==='summary'?3:5);
-  if(kind==='summary'){const sheet=read.getWorksheet('Overall Summary');const index=sheet.getColumn(1).values.indexOf('Daily staff, clients, and hours');assert.equal(sheet.getCell(index+2,2).value,1);}
-  else {assert.equal(read.worksheets[0].getCell('A5').value,'First Name');assert.equal(read.worksheets[0].columnCount,8);}
+  if(kind==='summary'){
+   const sheet=read.getWorksheet('Overall Summary');
+   const index=sheet.getColumn(1).values.indexOf('Daily staff, clients, and hours');
+   assert.equal(sheet.getCell(index+2,2).value,1);
+   assert.equal(sheet.getCell('A1').isMerged,true);
+   assert.equal(sheet.getCell('L1').master.address,'A1');
+  }else{
+   const sheet=read.worksheets[0];
+   assert.equal(sheet.getCell('B5').value,'First Name');
+   assert.equal(sheet.columnCount,13);
+   assert.equal(sheet.getCell('L6').value,kind==='employee'?'(973) 555-0101':'(973) 555-0201');
+   assert.equal(sheet.getCell('M6').value,kind==='employee'?'alex@example.com':'center@example.com');
+  }
  }
 });
-test('invalid hours and formula-like notes remain literal text',async()=>{
+test('invalid hours and formula-like notes remain literal text in the correct columns',async()=>{
  const workbook=await createScheduleWorkbook(ExcelJS,{kind:'employee',employees:[{first_name:'Test',monday:'bad',notes:'=HYPERLINK("bad")'}],location:'Test'});
  const read=new ExcelJS.Workbook();await read.xlsx.load(await workbook.xlsx.writeBuffer());
- assert.equal(read.worksheets[0].getCell('H6').value,'=HYPERLINK("bad")');assert.equal(read.worksheets[0].getCell('C6').value,'bad');
+ assert.equal(read.worksheets[0].getCell('K6').value,'=HYPERLINK("bad")');
+ assert.equal(read.worksheets[0].getCell('D6').value,'bad');
 });
-
 test('schedule rows sort alphabetically inside each category without mutating source',()=>{
  const source=[{id:1,first_name:'Zoe',category:'Employee'},{id:2,first_name:'amy',category:'Employee'},{id:3,first_name:'Ben',category:'Intern'}];
- const sheet=buildScheduleExport('employee',source,[])[0];
- assert.deepEqual(sheet.groups[0].rows.map(row=>row[0]),['amy','Zoe']);
- assert.equal(sheet.groups.find(group=>group.title==='Interns').rows[0][0],'Ben');
+ const sheet=buildScheduleExport('employee',source,[]);
+ assert.deepEqual(sheet.groups[0].rows.map(row=>row[1]),['amy','Zoe']);
+ assert.equal(sheet.groups.find(group=>group.title==='Interns').rows[0][1],'Ben');
  assert.equal(source[0].first_name,'Zoe');
 });
-
 test('summary opens as one complete worksheet with clean integer and fractional formats',async()=>{
  const workbook=await createScheduleWorkbook(ExcelJS,{kind:'summary',employees,clients,location:'Test'});
  const read=new ExcelJS.Workbook();await read.xlsx.load(await workbook.xlsx.writeBuffer());
@@ -55,13 +89,20 @@ test('summary opens as one complete worksheet with clean integer and fractional 
  const averageIndex=labels.indexOf('Average');assert.equal(sheet.getCell(averageIndex,2).numFmt,'#,##0.00');
  assert.equal(sheet.getCell(averageIndex,2).value,0.2);
 });
-
 test('export applies bold maroon only to selected days and preserves sorting',async()=>{
- const workbook=await createScheduleWorkbook(ExcelJS,{kind:'employee',location:'Test',employees:[{first_name:'Zoe',monday:'8-4',day_colors:{monday:'#0000FF'}},{first_name:'Amy',monday:'4:30-6:30',tuesday:'3:30-5:30',wednesday:'4:30-6:30',day_colors:{tuesday:'#800000'}}]});
+ const workbook=await createScheduleWorkbook(ExcelJS,{kind:'employee',location:'Test',employees:[
+  {first_name:'Zoe',monday:'8-4',day_colors:{monday:'#0000FF'}},
+  {first_name:'Amy',monday:'4:30-6:30',tuesday:'3:30-5:30',wednesday:'4:30-6:30',day_colors:{tuesday:'#800000'}}
+ ]});
  const read=new ExcelJS.Workbook();await read.xlsx.load(await workbook.xlsx.writeBuffer());
- const sheet=read.worksheets[0];assert.equal(sheet.getCell('A6').value,'Amy');assert.equal(sheet.getCell('D6').font.color.argb,'FF800000');assert.equal(Boolean(sheet.getCell('D6').font.bold),true);assert.equal(Boolean(sheet.getCell('C6').font.bold),false);assert.equal(sheet.getCell('C7').font.color.argb,'FF0000FF');assert.equal(Boolean(sheet.getCell('C7').font.bold),false);
+ const sheet=read.worksheets[0];
+ assert.equal(sheet.getCell('B6').value,'Amy');
+ assert.equal(sheet.getCell('E6').font.color.argb,'FF800000');
+ assert.equal(Boolean(sheet.getCell('E6').font.bold),true);
+ assert.equal(Boolean(sheet.getCell('D6').font.bold),false);
+ assert.equal(sheet.getCell('D7').font.color.argb,'FF0000FF');
+ assert.equal(Boolean(sheet.getCell('D7').font.bold),false);
 });
-
 test('export weekly totals and combined ratio use each employee capped at 40h, while details remain actual',()=>{
  const staff=[
   {id:1,first_name:'FortyFive',category:'Employee',monday:'8-5',tuesday:'8-5',wednesday:'8-5',thursday:'8-5',friday:'8-5'},
