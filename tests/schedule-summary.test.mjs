@@ -150,7 +150,7 @@ test('future BT projection excludes staff and clients whose end dates have passe
   {category:'Employee',start_date:'2026-11-15',...weekdays}
  ];
  const clients=[
-  ...Array.from({length:10},(_,index)=>({category:'Client/Kid',...(index===0?{end_date:'2026-11-29'}:{}),...weekdays}))
+  ...Array.from({length:11},(_,index)=>({category:'Client/Kid',...(index===0?{end_date:'2026-11-29'}:{}),...weekdays}))
  ];
  const forecast=futureBtShortage(employees,clients,{startDate:'2026-11-01',periodDays:30});
  assert.ok(forecast.days.every(day=>day.staff===10&&day.clients===10));
