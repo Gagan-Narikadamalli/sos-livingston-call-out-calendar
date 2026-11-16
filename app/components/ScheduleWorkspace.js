@@ -13,10 +13,9 @@ import {apiRequest} from '../../lib/client-api';
 const DAY_FIELDS=['monday','tuesday','wednesday','thursday','friday'];
 const DAY_LABELS=['Monday','Tuesday','Wednesday','Thursday','Friday'];
 
-const NEW_BADGE_DURATION_MS=7*24*60*60*1000;
+const NEW_BADGE_DURATION_MS=10*24*60*60*1000;
 function isNewScheduleRow(row,now){
-  if(row.finalized_at)return false;
-  const createdAt=new Date(row.created_at||'').getTime();
+  const createdAt=new Date(row._newlyCreatedAt??row.created_at??'').getTime();
   const age=now-createdAt;
   return Number.isFinite(createdAt)&&age>=0&&age<NEW_BADGE_DURATION_MS;
 }
@@ -166,24 +165,13 @@ export default function ScheduleWorkspace({manager=false,location}){
       headers:{'content-type':'application/json'},
       body:JSON.stringify({...row,...hours,category:canonicalCategory,kind}),
     });
-    setRows(current=>row._new?[...current,saved]:current.map(item=>item.id===row.id?saved:item));
+    const savedRow=row._new?{...saved,_newlyCreatedAt:Date.now()}:saved;
+    setRows(current=>row._new?[...current,savedRow]:current.map(item=>item.id===row.id?{...savedRow,...(item._newlyCreatedAt?{_newlyCreatedAt:item._newlyCreatedAt}:{})}:item));
+    if(row._new)setClock(Date.now());
     setEditing(null);
     notify(`${row.first_name}${row.last_name?' '+row.last_name:''} ${row._new?'added':'saved'} successfully.`);
   }
 
-  async function finalizeRow(row){
-    if(busy)return;
-    setBusy(true);
-    try{
-      const finalized=await apiRequest('/api/schedules',{
-        method:'PATCH',
-        headers:{'content-type':'application/json'},
-        body:JSON.stringify({action:'finalize',id:row.id,kind}),
-      });
-      setRows(current=>current.map(item=>String(item.id)===String(row.id)?finalized:item));
-      notify(`${row.first_name}${row.last_name?' '+row.last_name:''} marked as finalized.`);
-    }catch(error){setMessage(error.message);}finally{setBusy(false);}
-  }
 
   async function deleteRow(row){
     if(busy)return;
@@ -288,7 +276,6 @@ export default function ScheduleWorkspace({manager=false,location}){
             deleteSection={deleteSection}
             addRow={addRow}
             now={clock}
-            finalizeRow={finalizeRow}
           />;
         })}
       </div>
@@ -299,7 +286,7 @@ export default function ScheduleWorkspace({manager=false,location}){
   </PageShell>;
 }
 
-function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,deleteRow,deleteSection,addRow,now,finalizeRow}){
+function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,deleteRow,deleteSection,addRow,now}){
   const noun=kind==='employee'?'Staff Member':'Client / Kid';
   return <section className={`schedule-section schedule-section-${section.tone} schedule-display-section`}>
     <div className="schedule-section-head">
@@ -328,19 +315,19 @@ function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,dele
         </tr></thead>
         <tbody>
           {!rows.length&&<tr><td className="schedule-empty" colSpan={manager?14:11}>{manager?'No entries shown. Use Add to create one.':'No entries in this section.'}</td></tr>}
-          {rows.map((row,index)=><ScheduleRow key={row.id} row={row} serialNumber={index+1} manager={manager} editRow={editRow} busy={busy} deleteRow={deleteRow} now={now} finalizeRow={finalizeRow}/>)}
+          {rows.map((row,index)=><ScheduleRow key={row.id} row={row} serialNumber={index+1} manager={manager} editRow={editRow} busy={busy} deleteRow={deleteRow} now={now}/>)}
         </tbody>
       </table>
     </div>
   </section>;
 }
 
-function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow,now,finalizeRow}){
+function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow,now}){
   const colors=normalizeDayColors(row.day_colors);
   const isNew=isNewScheduleRow(row,now);
   return <tr>
     <td className="schedule-serial-number">{serialNumber}</td>
-    <td><span className="schedule-name-wrap"><span className="schedule-person-name">{row.first_name||'—'}</span>{isNew&&(manager?<button type="button" className="schedule-new-badge" disabled={busy} title="Click to mark this person as finalized" aria-label={`Mark ${row.first_name} as finalized`} onClick={()=>finalizeRow(row)}>NEW</button>:<span className="schedule-new-badge" title="Added within the last 7 days">NEW</span>)}</span></td>
+    <td><span className="schedule-name-wrap"><span className="schedule-person-name">{row.first_name||'—'}</span>{isNew&&<span className="schedule-new-badge" title="Added within the last 10 days">NEW</span>}</span></td>
     <td><span>{row.last_name||'—'}</span></td>
     {DAY_FIELDS.map((day,index)=>{const time=parseScheduleTime(row[day]);return <td key={day} className={time.valid&&time.minutes===0?'schedule-off-cell':''} title={time.valid&&time.minutes===0?'Not scheduled':undefined}><div className="schedule-display-time" style={{color:colors[day],fontWeight:colors[day]==='#800000'?700:400}}>{time.valid?(normalizedScheduleTime(row[day])?normalizedScheduleTime(row[day]).split('; ').map((range,index)=><span key={index}>{range.replace(/\b0(?=\d:)/g,'').replace(' - ',' – ')}</span>):<span className="schedule-off-label">Not scheduled</span>):<span title={row[day]}>{row[day]}</span>}{!time.valid&&<small className="schedule-time-error">Needs correction</small>}</div></td>;})}
     <td className="schedule-date-cell">{displayScheduleDate(row.start_date)}</td>
