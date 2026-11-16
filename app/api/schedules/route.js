@@ -8,6 +8,13 @@ import {db} from '../../../lib/db';
 const kinds=new Set(['employee','client']);
 const no=()=>NextResponse.json({error:'Unauthorized'},{status:401});
 const safe=(value,max=120)=>String(value??'').trim().slice(0,max);
+function validateContact(body){
+  const phone=String(body.phone_number??'').trim();
+  const email=String(body.email??'').trim();
+  if(phone.length>40)return 'Phone number must be 40 characters or fewer.';
+  if(email.length>254||(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))return 'Enter a valid email address.';
+  return null;
+}
 const validKind=value=>kinds.has(value)?value:null;
 function dateOnly(value){
   if(!value)return '';
@@ -49,6 +56,8 @@ async function ensureScheduleTable(sql){
     thursday text,
     friday text,
     notes text,
+    phone_number text,
+    email text,
     display_order integer not null default 0,
     created_at timestamptz default now(),
     updated_at timestamptz default now()
@@ -56,6 +65,8 @@ async function ensureScheduleTable(sql){
   await sql`alter table weekly_schedules add column if not exists day_colors jsonb not null default '{}'::jsonb`;
   await sql`alter table weekly_schedules add column if not exists start_date date`;
   await sql`alter table weekly_schedules add column if not exists end_date date`;
+  await sql`alter table weekly_schedules add column if not exists phone_number text`;
+  await sql`alter table weekly_schedules add column if not exists email text`;
   await sql`alter table weekly_schedules add column if not exists finalized_at timestamptz`;
   await sql`create index if not exists weekly_schedules_kind_order_idx on weekly_schedules(schedule_kind,display_order,id)`;
 }
@@ -75,6 +86,8 @@ function normalizeRow(body,kind,order=0){
     start_date:dateOnly(body.start_date)||null,
     end_date:dateOnly(body.end_date)||null,
     notes:safe(body.notes,500),
+    phone_number:safe(body.phone_number,40),
+    email:safe(body.email,254),
     day_colors:normalizeDayColors(body.day_colors),
     display_order:Number.isInteger(Number(body.display_order))?Number(body.display_order):order,
   };
@@ -88,12 +101,18 @@ async function handleGET(req){
   await ensureScheduleTable(sql);
   const rows=await sql`
     select id,schedule_kind,category,first_name,last_name,assigned_to,
-      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,day_colors,display_order,created_at,updated_at,finalized_at
+      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,phone_number,email,day_colors,display_order,created_at,updated_at,finalized_at
     from weekly_schedules
     where schedule_kind=${kind}
     order by display_order,id
   `;
-  return NextResponse.json(rows.map(serializeScheduleRow));
+  const managerView=authorized(req);
+  return NextResponse.json(rows.map(row=>{
+    const serialized=serializeScheduleRow(row);
+    if(managerView)return serialized;
+    const {phone_number,email,...teamRow}=serialized;
+    return teamRow;
+  }));
 }
 
 async function handlePOST(req){
@@ -103,6 +122,8 @@ async function handlePOST(req){
   const invalidDay=WEEKDAYS.find(day=>!parseScheduleTime(body[day]).valid);
   if(invalidDay)return NextResponse.json({error:`${invalidDay}: ${parseScheduleTime(body[invalidDay]).error}`},{status:400});
   if(!kind)return NextResponse.json({error:'Invalid schedule type.'},{status:400});
+  const invalidContact=validateContact(body);
+  if(invalidContact)return NextResponse.json({error:invalidContact},{status:400});
   const dates=validateDateRange(body);
   if(dates.error)return NextResponse.json({error:dates.error},{status:400});
   const sql=await db();
@@ -114,10 +135,10 @@ async function handlePOST(req){
   const created=await sql`
     insert into weekly_schedules(
       schedule_kind,category,first_name,last_name,assigned_to,
-      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,day_colors,display_order
+      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,phone_number,email,day_colors,display_order
     ) values(
       ${kind},${row.category},${row.first_name},${row.last_name||''},${row.assigned_to||''},
-      ${row.monday||''},${row.tuesday||''},${row.wednesday||''},${row.thursday||''},${row.friday||''},${row.start_date},${row.end_date},${row.notes||''},${sql.json(row.day_colors)},${Number(maxRows[0]?.next||0)}
+      ${row.monday||''},${row.tuesday||''},${row.wednesday||''},${row.thursday||''},${row.friday||''},${row.start_date},${row.end_date},${row.notes||''},${row.phone_number||''},${row.email||''},${sql.json(row.day_colors)},${Number(maxRows[0]?.next||0)}
     ) returning *
   `;
   return NextResponse.json(serializeScheduleRow(created[0]));
@@ -144,6 +165,8 @@ async function handlePATCH(req){
       ?NextResponse.json(serializeScheduleRow(finalized[0]))
       :NextResponse.json({error:'Schedule row not found.'},{status:404});
   }
+  const invalidContact=validateContact(body);
+  if(invalidContact)return NextResponse.json({error:invalidContact},{status:400});
   const id=Number(body.id),kind=validKind(body.kind);
   const invalidDay=WEEKDAYS.find(day=>!parseScheduleTime(body[day]).valid);
   if(invalidDay)return NextResponse.json({error:`${invalidDay}: ${parseScheduleTime(body[invalidDay]).error}`},{status:400});
@@ -158,7 +181,7 @@ async function handlePATCH(req){
     update weekly_schedules set
       category=${row.category},first_name=${row.first_name},last_name=${row.last_name||''},assigned_to=${row.assigned_to||''},
       monday=${row.monday||''},tuesday=${row.tuesday||''},wednesday=${row.wednesday||''},thursday=${row.thursday||''},friday=${row.friday||''},
-      start_date=${row.start_date},end_date=${row.end_date},notes=${row.notes||''},day_colors=coalesce(${body.day_colors===undefined?null:sql.json(row.day_colors)},day_colors),updated_at=now()
+      start_date=${row.start_date},end_date=${row.end_date},notes=${row.notes||''},phone_number=${row.phone_number||''},email=${row.email||''},day_colors=coalesce(${body.day_colors===undefined?null:sql.json(row.day_colors)},day_colors),updated_at=now()
     where id=${id} and schedule_kind=${kind}
     returning *
   `;
