@@ -59,9 +59,9 @@ export default function OverallScheduleSummary({onUnauthorized,location}){
  </SummaryTable></section>
  <CoverageSection days={days}/><CoverageSection days={days} includeInterns/>
  <section className="schedule-section"><div className="schedule-section-head"><div><h3>Hours per staff member</h3><p>Actual entered hours, including overtime. Weekly summary calculations count a maximum of 40 hours per person.</p></div></div>
- <SummaryTable headers={['Staff member','Category',...DAY_NAMES,'Weekly hours']}>
- {!activeEmployees.length&&<tr><td colSpan={8}>No currently active employee schedules.</td></tr>}
- {activeEmployees.map(employee=>{const times=WEEKDAYS.map(day=>parseScheduleTime(employee[day]));return <tr key={employee.id}><th scope="row">{[employee.first_name,employee.last_name].filter(Boolean).join(' ')}</th><td>{categoryName(employee)}</td>{times.map((time,index)=><td key={WEEKDAYS[index]}>{time.valid?formatHours(time.minutes):<span className="schedule-time-error">Check time</span>}</td>)}<td className="summary-total-cell">{formatHours(times.reduce((sum,time)=>sum+time.minutes,0))}{times.some(time=>!time.valid)&&<small>Incomplete</small>}</td></tr>;})}
+ <SummaryTable headers={['Staff member','Category','Phone number','Email',...DAY_NAMES,'Weekly hours']}>
+ {!activeEmployees.length&&<tr><td colSpan={10}>No currently active employee schedules.</td></tr>}
+ {activeEmployees.map(employee=>{const times=WEEKDAYS.map(day=>parseScheduleTime(employee[day]));return <tr key={employee.id}><th scope="row">{[employee.first_name,employee.last_name].filter(Boolean).join(' ')}</th><td>{categoryName(employee)}</td><td className="schedule-contact-cell">{employee.phone_number?<a href={'tel:'+String(employee.phone_number).replace(/[^\\d+]/g,'')}>{employee.phone_number}</a>:'—'}</td><td className="schedule-contact-cell">{employee.email?<a href={'mailto:'+employee.email}>{employee.email}</a>:'—'}</td>{times.map((time,index)=><td key={WEEKDAYS[index]}>{time.valid?formatHours(time.minutes):<span className="schedule-time-error">Check time</span>}</td>)}<td className="summary-total-cell">{formatHours(times.reduce((sum,time)=>sum+time.minutes,0))}{times.some(time=>!time.valid)&&<small>Incomplete</small>}</td></tr>;})}
  </SummaryTable></section>
  </>}
  </section>;
