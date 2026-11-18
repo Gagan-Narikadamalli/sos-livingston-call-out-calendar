@@ -68,6 +68,7 @@ async function ensureScheduleTable(sql){
   await sql`alter table weekly_schedules add column if not exists phone_number text`;
   await sql`alter table weekly_schedules add column if not exists email text`;
   await sql`alter table weekly_schedules add column if not exists finalized_at timestamptz`;
+  await sql`alter table weekly_schedules add column if not exists on_hold boolean not null default false`;
   await sql`create index if not exists weekly_schedules_kind_order_idx on weekly_schedules(schedule_kind,display_order,id)`;
 }
 
@@ -101,7 +102,7 @@ async function handleGET(req){
   await ensureScheduleTable(sql);
   const rows=await sql`
     select id,schedule_kind,category,first_name,last_name,assigned_to,
-      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,phone_number,email,day_colors,display_order,created_at,updated_at,finalized_at
+      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,phone_number,email,day_colors,display_order,created_at,updated_at,finalized_at,on_hold
     from weekly_schedules
     where schedule_kind=${kind}
     order by display_order,id
@@ -147,6 +148,24 @@ async function handlePOST(req){
 async function handlePATCH(req){
   if(!authorized(req))return no();
   const body=await req.json();
+  if(body.action==='set_hold'){
+    const holdId=Number(body.id);
+    const holdKind=validKind(body.kind);
+    if(!Number.isInteger(holdId)||holdId<1||!holdKind||typeof body.on_hold!=='boolean'){
+      return NextResponse.json({error:'Invalid hold status request.'},{status:400});
+    }
+    const sql=await db();
+    await ensureScheduleTable(sql);
+    const updated=await sql`
+      update weekly_schedules
+      set on_hold=${body.on_hold},updated_at=now()
+      where id=${holdId} and schedule_kind=${holdKind}
+      returning *
+    `;
+    return updated.length
+      ?NextResponse.json(serializeScheduleRow(updated[0]))
+      :NextResponse.json({error:'Schedule row not found.'},{status:404});
+  }
   if(body.action==='finalize'){
     const finalizeId=Number(body.id);
     const finalizeKind=validKind(body.kind);
