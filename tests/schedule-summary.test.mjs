@@ -6,6 +6,27 @@ test('blank/off days are not availability; malformed times are flagged',()=>{
  for(const value of ['',null,'  ','Off','N/A','—','---','PTO','not working'])assert.equal(hasScheduledHours(value),false);
  for(const value of ['8:12:00','3:30-5:5:30','9:75-5','25:00-26:00','09:00 AM - 08:00 AM','09:00 AM - '])assert.equal(parseScheduleTime(value).valid,false,value);
 });
+test('held staff and clients stay out of roster, coverage, hours, forecasts and invalid entries',()=>{
+ const employees=[
+  {id:1,category:'BT',monday:'9-5',tuesday:'9-5',wednesday:'9-5',thursday:'9-5',friday:'9-5'},
+  {id:2,category:'BT',on_hold:true,monday:'9-5',tuesday:'9-5',wednesday:'9-5',thursday:'9-5',friday:'9-5'},
+  {id:3,category:'Intern',on_hold:true,monday:'bad'}
+ ];
+ const clients=[
+  {id:4,category:'Client/Kid',monday:'9-5'},
+  {id:5,category:'Client/Kid',on_hold:true,monday:'9-5'},
+  {id:6,category:'Home Client',on_hold:true,monday:'bad'}
+ ];
+ const days=summarizeSchedules(employees,clients);
+ assert.deepEqual([days[0].employees,days[0].clients,days[0].bt,days[0].coverageClients],[1,1,1,1]);
+ assert.equal(days[0].staffMinutes,480);
+ assert.equal(days[0].clientMinutes,480);
+ assert.equal(cappedWeeklyStaffMinutes(employees),40*60);
+ assert.equal(weeklyHourMetrics(days,employees).staffMinutes,40*60);
+ assert.deepEqual(invalidScheduleEntries(employees,clients),[]);
+ assert.equal(futureBtShortage(employees,clients,{startDate:'2026-11-01',periodDays:7}).days[0].staff,1);
+});
+
 test('legacy business times become correct explicit AM/PM ranges',()=>{
  for(const [raw,hours] of [['8-4',8],['09:00 -5:00',8],['8:30-12:30',4],['12:00 - 5:00',5],['4:15-6:30',2.25],['9:30 to 4:00',6.5],['08:00-17:00',9],['9 AM - 5 PM',8],['1-5 PM',4],['9 AM-5',8],['6:30-12:30',6],['6:00-5 PM',11]]){
   const time=parseScheduleTime(raw);assert.equal(time.valid,true,raw);assert.equal(time.minutes,hours*60,raw);
