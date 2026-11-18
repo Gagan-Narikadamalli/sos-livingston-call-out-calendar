@@ -2,7 +2,7 @@
 import {useEffect,useState} from 'react';
 import ScheduleExportButton from './ScheduleExportButton';
 import {apiRequest} from '../../lib/client-api';
-import {summarizeSchedules,averageDailyMetrics,averageBtShortage,futureBtShortage,weeklyHourMetrics,invalidScheduleEntries,isCenterClient,isActiveOnDate,currentScheduleDateKey} from '../../lib/schedule-summary.mjs';
+import {summarizeSchedules,averageDailyMetrics,averageBtShortage,futureBtShortage,weeklyHourMetrics,invalidScheduleEntries,isCenterClient,isActiveOnDate,isOnHold,currentScheduleDateKey} from '../../lib/schedule-summary.mjs';
 import {WEEKDAYS,DAY_NAMES,parseScheduleTime,formatHours,scheduleCategory} from '../../lib/schedule-time.mjs';
 const dayName=day=>DAY_NAMES[WEEKDAYS.indexOf(day)];
 const categoryName=row=>({bt:'BT',bcba:'BCBA',intern:'Intern',managerhr:'Manager/HR'}[scheduleCategory(row)]);
@@ -29,8 +29,8 @@ export default function OverallScheduleSummary({onUnauthorized,location}){
   return()=>{active=false;};
  },[refresh]);
  const todayKey=currentScheduleDateKey();
- const activeEmployees=data?data.employees.filter(row=>isActiveOnDate(row,todayKey)):[];
- const activeCenterClients=data?data.clients.filter(row=>isCenterClient(row)&&isActiveOnDate(row,todayKey)):[];
+ const activeEmployees=data?data.employees.filter(row=>!isOnHold(row)&&isActiveOnDate(row,todayKey)):[];
+ const activeCenterClients=data?data.clients.filter(row=>!isOnHold(row)&&isCenterClient(row)&&isActiveOnDate(row,todayKey)):[];
  const days=data?summarizeSchedules(data.employees,data.clients,todayKey):[];
  const average=averageDailyMetrics(days);
  const hours=weeklyHourMetrics(days,activeEmployees);
