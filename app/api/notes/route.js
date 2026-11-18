@@ -271,7 +271,9 @@ async function handleDELETE(req){
   if(!rows.length)return NextResponse.json({deleted:0});
 
   const note=rows[0];
-  if(note.recurrence_id&&note.recurrence_ongoing===false){
+  const deleteScope=new URL(req.url).searchParams.get('scope');
+
+  if(note.recurrence_id&&deleteScope==='series'){
     await ensureRecurrenceExceptions(sql);
     const result=await sql.begin(async transaction=>{
       const deletedNotes=await transaction`
@@ -285,7 +287,7 @@ async function handleDELETE(req){
       `;
       await transaction`
         delete from note_recurrences
-        where id=${note.recurrence_id} and ongoing=false
+        where id=${note.recurrence_id}
       `;
       return {deletedNotes:deletedNotes.length};
     });
@@ -294,6 +296,13 @@ async function handleDELETE(req){
       recurringOccurrence:true,
       recurringSeriesDeleted:true,
     });
+  }
+
+  if(note.recurrence_id&&deleteScope!=='occurrence'){
+    return NextResponse.json(
+      {error:'Choose whether to delete this date or the entire recurring series.'},
+      {status:400}
+    );
   }
 
   if(note.recurrence_id){
