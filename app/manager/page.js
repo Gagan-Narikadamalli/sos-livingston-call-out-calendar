@@ -175,10 +175,18 @@ export default function Manager(){
     }
   }
 
-  async function remove(kind,id){
-    if(!confirm('Delete this item?'))return;
+  async function remove(kind,id,scope=''){
+    const isRecurring=Boolean(modal?.recurrence_id);
+    const label=scope==='series'
+      ?'the entire recurring series, including all its dates'
+      :isRecurring
+        ?'only this date'
+        :'this item';
+    if(!confirm(`Delete ${label}? This cannot be undone.`))return;
     try{
-      await apiRequest(`/api/${kind}?id=${id}`,{method:'DELETE'});
+      const query=new URLSearchParams({id:String(id)});
+      if(scope)query.set('scope',scope);
+      await apiRequest(`/api/${kind}?${query.toString()}`,{method:'DELETE'});
       setModal(null);
       await load();
     }catch(error){
@@ -444,7 +452,12 @@ export default function Manager(){
       <div className="actions">
         <button>Save</button>
         {modal.recurrence_id&&modal.recurrence_ongoing&&modal.recurrence_active&&<button type="button" className="danger" onClick={stopRecurrence}>Stop ongoing</button>}
-        {modal.id&&<button type="button" className="danger" onClick={()=>remove(modal.kind==='note'?'notes':'manager',modal.id)}>Delete</button>}
+        {modal.id&&modal.kind==='note'&&modal.recurrence_id
+          ?<>
+            <button type="button" className="danger" onClick={()=>remove('notes',modal.id,'occurrence')}>Delete this date only</button>
+            <button type="button" className="danger" onClick={()=>remove('notes',modal.id,'series')}>Delete entire recurring series</button>
+          </>
+          :modal.id&&<button type="button" className="danger" onClick={()=>remove(modal.kind==='note'?'notes':'manager',modal.id)}>Delete</button>}
         <button type="button" className="secondary" onClick={()=>setModal(null)}>Cancel</button>
       </div>
     </form></div>}
