@@ -314,7 +314,7 @@ function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,dele
       <div className="schedule-section-actions">
         <span className="schedule-count" title="Active people, excluding those on hold">{totalCount}</span>
         {manager&&<button type="button" disabled={busy} onClick={()=>addRow(section.key)}>+ Add {noun}</button>}
-        {manager&&totalCount>0&&<button type="button" className="danger schedule-delete-section" disabled={busy} onClick={()=>deleteSection(section)}>Delete All in Section</button>}
+        {manager&&rows.length>0&&<button type="button" className="danger schedule-delete-section" disabled={busy} onClick={()=>deleteSection(section)}>Delete All in Section</button>}
       </div>
     </div>
     <div className="schedule-group-table-wrap">
