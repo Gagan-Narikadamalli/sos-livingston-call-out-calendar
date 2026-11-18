@@ -351,3 +351,55 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .overall-summary .schedule-contact-cell{min-width:145px!important;white-space:nowrap}
 .overall-summary .schedule-contact-cell a{color:#245d79;text-decoration:none}
 .overall-summary .schedule-contact-cell a:hover{text-decoration:underline}
+
+ 
+/* Keep all manager action buttons the same size, including Hold and Resume. */
+.schedule-sections .schedule-display-section .schedule-manager-table{
+  width:100%;
+  min-width:1910px!important;
+  table-layout:fixed;
+}
+.schedule-sections .schedule-display-section .schedule-manager-table th:last-child,
+.schedule-sections .schedule-display-section .schedule-manager-table td:last-child{
+  width:190px!important;
+  min-width:190px!important;
+  box-sizing:border-box;
+}
+.schedule-sections .schedule-display-section .schedule-manager-table td:last-child{
+  padding:7px 6px;
+  overflow:visible;
+}
+.schedule-sections .schedule-display-section .schedule-manager-table .schedule-row-actions{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:center;
+  gap:5px;
+  width:100%;
+  min-width:0;
+  overflow:visible;
+}
+.schedule-sections .schedule-display-section .schedule-manager-table .schedule-row-actions button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  height:36px;
+  min-height:36px;
+  padding:0 3px;
+  margin:0;
+  border-radius:7px;
+  font-size:11px;
+  line-height:1;
+  font-weight:800;
+  letter-spacing:0;
+  white-space:nowrap;
+  overflow:visible;
+}
+.schedule-sections .schedule-display-section .schedule-manager-table .schedule-row-actions .schedule-hold-button,
+.schedule-sections .schedule-display-section .schedule-manager-table .schedule-row-actions .schedule-resume-button{
+  min-width:0;
+  padding-left:2px;
+  padding-right:2px;
+}
