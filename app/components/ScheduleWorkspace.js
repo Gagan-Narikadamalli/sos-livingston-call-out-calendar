@@ -173,6 +173,21 @@ export default function ScheduleWorkspace({manager=false,location}){
   }
 
 
+  async function toggleHold(row){
+    if(!manager||busy||row._new)return;
+    const nextOnHold=!Boolean(row.on_hold);
+    setBusy(true);
+    try{
+      const updated=await apiRequest('/api/schedules',{
+        method:'PATCH',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({action:'set_hold',id:row.id,kind,on_hold:nextOnHold}),
+      });
+      setRows(current=>current.map(item=>item.id===row.id?{...item,...updated}:item));
+      notify(row.first_name+(row.last_name?' '+row.last_name:'')+(nextOnHold?' placed on hold successfully.':' resumed successfully.'));
+    }catch(error){setMessage(error.message);}finally{setBusy(false);}
+  }
+
   async function deleteRow(row){
     if(busy)return;
     if(row._new){
@@ -247,7 +262,7 @@ export default function ScheduleWorkspace({manager=false,location}){
       <div className="schedule-topbar">
         <div>
           <h2>{kind==='employee'?'Employee Schedule':'Clients / Kids Schedule'}</h2>
-          <p>{loading?'Refreshing schedule…':`${rows.length} total ${kind==='employee'?'staff member(s)':'client/kid(s)'}`}</p>
+          <p>{loading?'Refreshing schedule…':`${rows.filter(row=>!row.on_hold).length} active ${kind==='employee'?'staff member(s)':'client/kid(s)'}${rows.some(row=>row.on_hold)?` · ${rows.filter(row=>row.on_hold).length} on hold`:''}`}</p>
         </div>
         <div className="schedule-topbar-actions">
           {manager&&<ScheduleExportButton kind={kind} employees={kind==='employee'?rows:[]} clients={kind==='client'?rows:[]} location={location} disabled={loading||busy}/>}
@@ -273,6 +288,7 @@ export default function ScheduleWorkspace({manager=false,location}){
             editRow={row=>setEditing({...row})}
             busy={busy||loading}
             deleteRow={deleteRow}
+            toggleHold={toggleHold}
             deleteSection={deleteSection}
             addRow={addRow}
             now={clock}
@@ -286,7 +302,7 @@ export default function ScheduleWorkspace({manager=false,location}){
   </PageShell>;
 }
 
-function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,deleteRow,deleteSection,addRow,now}){
+function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,deleteRow,toggleHold,deleteSection,addRow,now}){
   const noun=kind==='employee'?'Staff Member':'Client / Kid';
   return <section className={`schedule-section schedule-section-${section.tone} schedule-display-section`}>
     <div className="schedule-section-head">
@@ -296,7 +312,7 @@ function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,dele
         <p>{section.subtitle}</p>
       </div>
       <div className="schedule-section-actions">
-        <span className="schedule-count">{totalCount}</span>
+        <span className="schedule-count" title="Active people, excluding those on hold">{rows.filter(row=>!row.on_hold).length}</span>
         {manager&&<button type="button" disabled={busy} onClick={()=>addRow(section.key)}>+ Add {noun}</button>}
         {manager&&totalCount>0&&<button type="button" className="danger schedule-delete-section" disabled={busy} onClick={()=>deleteSection(section)}>Delete All in Section</button>}
       </div>
@@ -315,17 +331,17 @@ function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,dele
         </tr></thead>
         <tbody>
           {!rows.length&&<tr><td className="schedule-empty" colSpan={manager?14:11}>{manager?'No entries shown. Use Add to create one.':'No entries in this section.'}</td></tr>}
-          {rows.map((row,index)=><ScheduleRow key={row.id} row={row} serialNumber={index+1} manager={manager} editRow={editRow} busy={busy} deleteRow={deleteRow} now={now}/>)}
+          {rows.map((row,index)=><ScheduleRow key={row.id} row={row} serialNumber={index+1} manager={manager} editRow={editRow} busy={busy} deleteRow={deleteRow} toggleHold={toggleHold} now={now}/>)}
         </tbody>
       </table>
     </div>
   </section>;
 }
 
-function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow,now}){
+function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow,toggleHold,now}){
   const colors=normalizeDayColors(row.day_colors);
   const isNew=isNewScheduleRow(row,now);
-  return <tr>
+  return <tr className={row.on_hold?'schedule-row-on-hold':''}>
     <td className="schedule-serial-number">{serialNumber}</td>
     <td><span className="schedule-name-wrap"><span className="schedule-person-name">{row.first_name||'—'}</span>{isNew&&<span className="schedule-new-badge" title="Added within the last 10 days">NEW</span>}</span></td>
     <td><span>{row.last_name||'—'}</span></td>
@@ -334,7 +350,7 @@ function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow,now}){
     <td className="schedule-date-cell">{displayScheduleDate(row.end_date)}</td>
     <td className="schedule-notes-cell"><span className="schedule-display-notes" title={row.notes||''}>{row.notes||'—'}</span></td>
     {manager&&<><td className="schedule-contact-cell" title={row.phone_number||''}>{row.phone_number?<a href={'tel:'+String(row.phone_number).replace(/[^\d+]/g,'')}>{row.phone_number}</a>:'—'}</td><td className="schedule-contact-cell" title={row.email||''}>{row.email?<a href={`mailto:${row.email}`}>{row.email}</a>:'—'}</td></>}
-    {manager&&<td><div className="schedule-row-actions"><button type="button" disabled={busy} onClick={()=>editRow(row)}>Edit</button><button type="button" className="danger" disabled={busy} onClick={()=>deleteRow(row)}>Delete</button></div></td>}
+    {manager&&<td><div className="schedule-row-actions"><button type="button" disabled={busy} onClick={()=>editRow(row)}>Edit</button><button type="button" className={row.on_hold?'schedule-resume-button':'schedule-hold-button'} disabled={busy||row._new} onClick={()=>toggleHold(row)}>{row.on_hold?'Resume':'Hold'}</button><button type="button" className="danger" disabled={busy} onClick={()=>deleteRow(row)}>Delete</button></div></td>}
   </tr>;
 }
 
