@@ -3,7 +3,7 @@ import {NextResponse} from 'next/server';
 import {authorized} from '../../../lib/auth';
 import {db} from '../../../lib/db';
 import {findHolidayDates,holidayConflictMessage} from '../../../lib/holidays';
-import {ensureRecurrenceExceptions,materializeRecurringNotesForMonth,stopOngoingRecurrenceIfCurrentMonthEmpty} from '../../../lib/note-recurrence';
+import {ensureRecurrenceExceptions,materializeRecurringNotesForMonth} from '../../../lib/note-recurrence';
 import {clean,validDate,validMonth} from '../../../lib/validate';
 
 const no=()=>NextResponse.json({error:'Unauthorized'},{status:401});
@@ -315,13 +315,10 @@ async function handleDELETE(req){
       `;
       return transaction`delete from calendar_notes where id=${noteId} returning id`;
     });
-    const autoStopped=deleted.length
-      ?await stopOngoingRecurrenceIfCurrentMonthEmpty(sql,note.recurrence_id)
-      :false;
     return NextResponse.json({
       deleted:deleted.length,
       recurringOccurrence:true,
-      recurrenceAutoStopped:autoStopped,
+      recurringSeriesContinues:true,
     });
   }
 
