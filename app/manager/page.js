@@ -455,7 +455,7 @@ export default function Manager(){
         {modal.id&&modal.kind==='note'&&modal.recurrence_id
           ?<>
             <button type="button" className="danger" onClick={()=>remove('notes',modal.id,'occurrence')}>Delete this date only</button>
-            <button type="button" className="danger" onClick={()=>remove('notes',modal.id,'series')}>Delete entire recurring series</button>
+            <button type="button" className="danger" onClick={()=>remove('notes',modal.id,'series')}>{modal.recurrence_ongoing?'Delete entire ongoing series':'Delete entire date-range series'}</button>
           </>
           :modal.id&&<button type="button" className="danger" onClick={()=>remove(modal.kind==='note'?'notes':'manager',modal.id)}>Delete</button>}
         <button type="button" className="secondary" onClick={()=>setModal(null)}>Cancel</button>
