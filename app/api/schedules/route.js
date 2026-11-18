@@ -111,7 +111,10 @@ async function handleGET(req){
   return NextResponse.json(rows.map(row=>{
     const serialized=serializeScheduleRow(row);
     if(managerView)return serialized;
-    const {phone_number,email,on_hold,...teamRow}=serialized;
+    const teamRow={...serialized};
+    delete teamRow.phone_number;
+    delete teamRow.email;
+    delete teamRow.on_hold;
     return teamRow;
   }));
 }
