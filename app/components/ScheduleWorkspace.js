@@ -282,7 +282,7 @@ export default function ScheduleWorkspace({manager=false,location}){
             key={section.key}
             section={section}
             rows={sectionRows}
-            totalCount={allSectionRows.length}
+            totalCount={allSectionRows.filter(row=>!row.on_hold).length}
             manager={manager}
             kind={kind}
             editRow={row=>setEditing({...row})}
@@ -312,7 +312,7 @@ function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,dele
         <p>{section.subtitle}</p>
       </div>
       <div className="schedule-section-actions">
-        <span className="schedule-count" title="Active people, excluding those on hold">{rows.filter(row=>!row.on_hold).length}</span>
+        <span className="schedule-count" title="Active people, excluding those on hold">{totalCount}</span>
         {manager&&<button type="button" disabled={busy} onClick={()=>addRow(section.key)}>+ Add {noun}</button>}
         {manager&&totalCount>0&&<button type="button" className="danger schedule-delete-section" disabled={busy} onClick={()=>deleteSection(section)}>Delete All in Section</button>}
       </div>
@@ -341,7 +341,7 @@ function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,dele
 function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow,toggleHold,now}){
   const colors=normalizeDayColors(row.day_colors);
   const isNew=isNewScheduleRow(row,now);
-  return <tr className={row.on_hold?'schedule-row-on-hold':''}>
+  return <tr className={manager&&row.on_hold?'schedule-row-on-hold':''}>
     <td className="schedule-serial-number">{serialNumber}</td>
     <td><span className="schedule-name-wrap"><span className="schedule-person-name">{row.first_name||'—'}</span>{isNew&&<span className="schedule-new-badge" title="Added within the last 10 days">NEW</span>}</span></td>
     <td><span>{row.last_name||'—'}</span></td>
