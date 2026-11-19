@@ -4,6 +4,7 @@ import {WEEKDAYS,parseScheduleTime,normalizedScheduleTime} from '../../../lib/sc
 import {withApiErrors} from '../../../lib/api';
 import {authorized,calendarAuthorized} from '../../../lib/auth';
 import {db} from '../../../lib/db';
+import {writeAudit} from '../../../lib/audit-log';
 
 const kinds=new Set(['employee','client']);
 const no=()=>NextResponse.json({error:'Unauthorized'},{status:401});
@@ -145,7 +146,9 @@ async function handlePOST(req){
       ${row.monday||''},${row.tuesday||''},${row.wednesday||''},${row.thursday||''},${row.friday||''},${row.start_date},${row.end_date},${row.notes||''},${row.phone_number||''},${row.email||''},${sql.json(row.day_colors)},${Number(maxRows[0]?.next||0)}
     ) returning *
   `;
-  return NextResponse.json(serializeScheduleRow(created[0]));
+  const saved=serializeScheduleRow(created[0]);
+  await writeAudit(sql,{action:'add',entityType:'schedule',entityId:saved.id,summary:`Added ${kind==='employee'?'staff member':'client'}: ${saved.first_name} ${saved.last_name||''}`.trim(),details:{kind,category:saved.category,after:saved}});
+  return NextResponse.json(saved);
 }
 
 async function handlePATCH(req){
@@ -159,15 +162,17 @@ async function handlePATCH(req){
     }
     const sql=await db();
     await ensureScheduleTable(sql);
+    const beforeRows=await sql`select * from weekly_schedules where id=${holdId} and schedule_kind=${holdKind}`;
+    if(!beforeRows.length)return NextResponse.json({error:'Schedule row not found.'},{status:404});
     const updated=await sql`
       update weekly_schedules
       set on_hold=${body.on_hold},updated_at=now()
       where id=${holdId} and schedule_kind=${holdKind}
       returning *
     `;
-    return updated.length
-      ?NextResponse.json(serializeScheduleRow(updated[0]))
-      :NextResponse.json({error:'Schedule row not found.'},{status:404});
+    const saved=serializeScheduleRow(updated[0]);
+    await writeAudit(sql,{action:body.on_hold?'hold':'resume',entityType:'schedule',entityId:holdId,summary:`${saved.first_name} ${saved.last_name||''} ${body.on_hold?'placed on hold':'resumed'}`.trim(),details:{kind:holdKind,category:saved.category}});
+    return NextResponse.json(saved);
   }
   if(body.action==='finalize'){
     const finalizeId=Number(body.id);
@@ -199,6 +204,9 @@ async function handlePATCH(req){
   if(!row.first_name)return NextResponse.json({error:'A first name or client/kid name is required.'},{status:400});
   const sql=await db();
   await ensureScheduleTable(sql);
+  const beforeRows=await sql`select * from weekly_schedules where id=${id} and schedule_kind=${kind}`;
+  if(!beforeRows.length)return NextResponse.json({error:'Schedule row not found.'},{status:404});
+  const before=serializeScheduleRow(beforeRows[0]);
   const updated=await sql`
     update weekly_schedules set
       category=${row.category},first_name=${row.first_name},last_name=${row.last_name||''},assigned_to=${row.assigned_to||''},
@@ -207,7 +215,12 @@ async function handlePATCH(req){
     where id=${id} and schedule_kind=${kind}
     returning *
   `;
-  return updated.length?NextResponse.json(serializeScheduleRow(updated[0])):NextResponse.json({error:'Schedule row not found.'},{status:404});
+  if(!updated.length)return NextResponse.json({error:'Schedule row not found.'},{status:404});
+  const saved=serializeScheduleRow(updated[0]);
+  const fields=['category','first_name','last_name','assigned_to','monday','tuesday','wednesday','thursday','friday','start_date','end_date','notes','phone_number','email','day_colors'];
+  const changedFields=fields.filter(field=>JSON.stringify(before[field]??null)!==JSON.stringify(saved[field]??null));
+  await writeAudit(sql,{action:'edit',entityType:'schedule',entityId:id,summary:`Edited ${kind==='employee'?'staff member':'client'}: ${saved.first_name} ${saved.last_name||''}`.trim(),details:{kind,category:saved.category,changedFields,before,after:saved}});
+  return NextResponse.json(saved);
 }
 
 async function handleDELETE(req){
@@ -219,21 +232,30 @@ async function handleDELETE(req){
   await ensureScheduleTable(sql);
 
   const scope=url.searchParams.get('scope');
-  if(scope==='all'){
-    const deleted=await sql`delete from weekly_schedules where schedule_kind=${kind} returning id`;
-    return NextResponse.json({deleted:deleted.length});
-  }
-  if(scope==='section'){
+  let predicate,values;
+  if(scope==='all'){predicate='all';}
+  else if(scope==='section'){
     const category=safe(url.searchParams.get('category'),60);
     if(!category)return NextResponse.json({error:'Section category is required.'},{status:400});
-    const deleted=await sql`delete from weekly_schedules where schedule_kind=${kind} and category=${category} returning id`;
-    return NextResponse.json({deleted:deleted.length});
+    predicate='section';values={category};
+  }else{
+    const id=Number(url.searchParams.get('id'));
+    if(!Number.isInteger(id)||id<1)return NextResponse.json({error:'Invalid schedule row.'},{status:400});
+    predicate='single';values={id};
   }
-
-  const id=Number(url.searchParams.get('id'));
-  if(!Number.isInteger(id)||id<1)return NextResponse.json({error:'Invalid schedule row.'},{status:400});
-  const deleted=await sql`delete from weekly_schedules where id=${id} and schedule_kind=${kind} returning id`;
-  return NextResponse.json({deleted:deleted.length});
+  const result=await sql.begin(async transaction=>{
+    let snapshots;
+    if(predicate==='all')snapshots=await transaction`select * from weekly_schedules where schedule_kind=${kind} for update`;
+    else if(predicate==='section')snapshots=await transaction`select * from weekly_schedules where schedule_kind=${kind} and category=${values.category} for update`;
+    else snapshots=await transaction`select * from weekly_schedules where id=${values.id} and schedule_kind=${kind} for update`;
+    let deleted;
+    if(predicate==='all')deleted=await transaction`delete from weekly_schedules where schedule_kind=${kind} returning id`;
+    else if(predicate==='section')deleted=await transaction`delete from weekly_schedules where schedule_kind=${kind} and category=${values.category} returning id`;
+    else deleted=await transaction`delete from weekly_schedules where id=${values.id} and schedule_kind=${kind} returning id`;
+    if(snapshots.length)await writeAudit(transaction,{action:'delete',entityType:'schedule',entityId:values?.id??null,summary:predicate==='single'?`Deleted ${kind==='employee'?'staff member':'client'}: ${snapshots[0].first_name} ${snapshots[0].last_name||''}`.trim():`Deleted ${snapshots.length} ${kind==='employee'?'staff schedule':'client schedule'} entr${snapshots.length===1?'y':'ies'}`,details:{kind,scope:predicate,count:snapshots.length,category:values?.category||null},undoData:snapshots});
+    return deleted.length;
+  });
+  return NextResponse.json({deleted:result});
 }
 
 export const GET=withApiErrors(handleGET);
