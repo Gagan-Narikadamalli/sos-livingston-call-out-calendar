@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
 import {apiRequest} from '../../lib/client-api';
-const labels={add:'Added',edit:'Edited',delete:'Deleted',hold:'Placed on hold',resume:'Resumed',undo:'Undo'};
+const labels={add:'Added',edit:'Edited',delete:'Deleted',hold:'Hold',resume:'Resumed',undo:'Undo'};
 const dateFmt=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'Unknown date':new Intl.DateTimeFormat('en-US',{dateStyle:'medium'}).format(d)};
 const timeFmt=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'Unknown time':new Intl.DateTimeFormat('en-US',{timeStyle:'short'}).format(d)};
 const fieldNames={first_name:'First name',last_name:'Last name',category:'Category',assigned_to:'Assigned to',monday:'Monday',tuesday:'Tuesday',wednesday:'Wednesday',thursday:'Thursday',friday:'Friday',start_date:'Start date',end_date:'End date',notes:'Notes',phone_number:'Phone number',email:'Email',event_date:'Date',title:'Title',note_type:'Note type',note_category:'Note category',details:'Details',name:'Name',request_type:'Request type',submitter_type:'Submitted by',reason:'Reason'};
