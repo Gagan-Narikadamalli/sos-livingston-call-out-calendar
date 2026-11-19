@@ -405,31 +405,24 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 }
 
 
-/* Compact spreadsheet-style manager history: one action per row. */
-.manager-history-page .history-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:18px 0 12px}
-.manager-history-page .history-toolbar h2{margin:0 0 4px;font-size:21px}
-.manager-history-page .history-toolbar p{margin:0;color:#60788b;font-size:13px}
-.manager-history-page .history-toolbar-actions{display:flex;align-items:center;gap:9px}
-.manager-history-page .history-toolbar-actions select{min-width:190px;padding:9px 12px;font-size:13px}
-.manager-history-page .history-toolbar-actions button{padding:10px 16px;font-size:13px}
-.manager-history-page .history-table-wrap{width:100%;overflow-x:auto;border:1px solid #d6e2ec;border-radius:12px;background:#fff;box-shadow:0 5px 18px #17305e0a}
-.manager-history-page .history-table{width:100%;min-width:960px}
-.manager-history-page .history-table-header,.manager-history-page .history-item{display:grid;grid-template-columns:145px minmax(210px,1.25fr) minmax(260px,1.8fr) 178px 88px;align-items:center;column-gap:12px}
-.manager-history-page .history-table-header{min-height:39px;padding:0 14px;background:#287b59;color:#fff;font-size:12px;font-weight:800;letter-spacing:.02em}
-.manager-history-page .history-item{min-height:54px;padding:6px 14px;border-bottom:1px solid #e2eaf0;color:#17305e;font-size:13px}
-.manager-history-page .history-item:last-child{border-bottom:0}
+/* Aligned history rows: fixed date/action fields and inline undo in description. */
+.manager-history-page .history-table{width:100%;min-width:820px}
+.manager-history-page .history-table-header,.manager-history-page .history-item{display:grid;grid-template-columns:190px 140px minmax(0,1fr);align-items:center;column-gap:16px}
+.manager-history-page .history-table-header{min-height:42px;padding:0 18px;background:#287b59;color:#fff;font-size:12px;font-weight:800;letter-spacing:.02em}
+.manager-history-page .history-item{min-height:58px;padding:8px 18px;border-bottom:1px solid #e2eaf0;color:#17305e;font-size:13px}
 .manager-history-page article.history-item:nth-of-type(odd){background:#f7fafc}
 .manager-history-page .history-item:hover{background:#edf5f9}
-.manager-history-page .history-action-cell{display:flex;align-items:center;gap:8px;min-width:0}
-.manager-history-page .history-action-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 27px;width:27px;height:27px;border-radius:7px;font-size:17px;font-weight:800}
+.manager-history-page .history-time-cell{color:#657c8f;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.manager-history-page .history-action-cell{display:flex;align-items:center;gap:9px;min-width:0}
+.manager-history-page .history-action-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;height:28px;border-radius:7px;font-size:17px;font-weight:800}
 .manager-history-page .history-action-label{font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.045em;white-space:nowrap}
-.manager-history-page .history-description-cell,.manager-history-page .history-details-cell{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.manager-history-page .history-description-cell strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;font-weight:750}
-.manager-history-page .history-description-cell small{display:block;margin-top:2px;color:#71869a;font-size:10px}
-.manager-history-page .history-details-cell{color:#60788b;font-size:11.5px}
-.manager-history-page .history-time-cell{color:#657c8f;font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.manager-history-page .history-undo-cell{display:flex;align-items:center;justify-content:flex-start}
-.manager-history-page .history-undo-button{padding:6px 10px;border-radius:6px;background:#1c477c;font-size:11px;line-height:1.2;white-space:nowrap}
-.manager-history-page .history-meta,.manager-history-page .history-no-details{color:#8798a6;font-size:10px}
+.manager-history-page .history-description-cell{display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0}
+.manager-history-page .history-description-text{display:flex;align-items:baseline;gap:12px;min-width:0;overflow:hidden}
+.manager-history-page .history-description-text strong{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;font-weight:750}
+.manager-history-page .history-description-text>span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#60788b;font-size:11.5px}
+.manager-history-page .history-description-text small{flex:0 0 auto;color:#71869a;font-size:10px}
+.manager-history-page .history-inline-action{display:flex;align-items:center;justify-content:flex-end;flex:0 0 auto;min-width:54px}
+.manager-history-page .history-undo-button{padding:6px 11px;border-radius:6px;background:#1c477c;font-size:11px;line-height:1.2;white-space:nowrap}
+.manager-history-page .history-meta{color:#8798a6;font-size:10px;white-space:nowrap}
 .manager-history-page .history-empty{padding:20px;border:1px solid #d6e2ec;border-radius:10px;background:#fff;color:#60788b}
-@media(max-width:760px){.manager-history-page .history-toolbar{align-items:flex-start}.manager-history-page .history-toolbar-actions{width:100%}.manager-history-page .history-toolbar-actions select{flex:1;min-width:0}.manager-history-page .history-table{min-width:900px}.manager-history-page .history-table-header,.manager-history-page .history-item{grid-template-columns:130px minmax(190px,1.1fr) minmax(230px,1.5fr) 165px 75px;column-gap:8px;padding-left:10px;padding-right:10px}}
+@media(max-width:760px){.manager-history-page .history-table{min-width:820px}.manager-history-page .history-table-header,.manager-history-page .history-item{grid-template-columns:170px 125px minmax(0,1fr);column-gap:10px;padding-left:12px;padding-right:12px}.manager-history-page .history-description-text{align-items:flex-start;flex-direction:column;gap:2px}.manager-history-page .history-description-cell{gap:8px}}
