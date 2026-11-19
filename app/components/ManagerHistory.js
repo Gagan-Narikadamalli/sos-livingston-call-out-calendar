@@ -43,6 +43,6 @@ export default function ManagerHistory(){
     <div className="history-action-cell" role="cell"><span className={`history-action-icon history-action-${item.action}`}>{item.action==='add'?'＋':item.action==='edit'?'✎':item.action==='delete'?'−':item.action==='hold'?'Ⅱ':item.action==='resume'?'▶':'↶'}</span><span className="history-action-label">{labels[item.action]||item.action}</span></div>
     <div className="history-description-cell" role="cell" title={[item.summary,...detailLines].join(' · ')}><div className="history-description-text"><strong>{item.summary}</strong>{detailLines.length>0&&<span>{detailLines.join(' · ')}</span>}{item.details?.count>1&&<small>{item.details.count} records affected</small>}</div><div className="history-inline-action">{item.undo_available?<button type="button" className="history-undo-button" disabled={busyId!==null} onClick={()=>undo(item.id)}>{busyId===item.id?'Restoring…':'Undo'}</button>:item.action==='delete'&&item.entity_type==='schedule'?<span className="history-meta">Expired</span>:null}</div></div>
    </article>})}
-  </div></div>
+  </div></div>}
  </main>;
 }
