@@ -29,6 +29,7 @@ export default function ScheduleQuickNav(){
     <a href={`${base}/schedules?view=employee`} onClick={close}><span>Employee Schedule</span><span aria-hidden="true">→</span></a>
     <a href={`${base}/schedules?view=client`} onClick={close}><span>Clients / Kids Schedule</span><span aria-hidden="true">→</span></a>
     {isManager&&<a href={`${base}/schedules?view=summary`} onClick={close}><span>Overall Summary</span><span aria-hidden="true">→</span></a>}
+    {isManager&&<a className={pathname?.startsWith('/manager/history')?'active':''} href="/manager/history" onClick={close}><span>History</span><span aria-hidden="true">→</span></a>}
    </nav>
    <div className="schedule-nav-footnote">{isManager?'Manager workspace':'Read-only team workspace'}</div>
   </dialog>
