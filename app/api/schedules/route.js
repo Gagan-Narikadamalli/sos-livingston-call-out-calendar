@@ -188,9 +188,10 @@ async function handlePATCH(req){
       where id=${finalizeId} and schedule_kind=${finalizeKind}
       returning *
     `;
-    return finalized.length
-      ?NextResponse.json(serializeScheduleRow(finalized[0]))
-      :NextResponse.json({error:'Schedule row not found.'},{status:404});
+    if(!finalized.length)return NextResponse.json({error:'Schedule row not found.'},{status:404});
+    const saved=serializeScheduleRow(finalized[0]);
+    await writeAudit(sql,{action:'edit',entityType:'schedule',entityId:finalizeId,summary:`Finalized schedule: ${saved.first_name} ${saved.last_name||''}`.trim(),details:{kind:finalizeKind,change:'Schedule finalized'}});
+    return NextResponse.json(saved);
   }
   const invalidContact=validateContact(body);
   if(invalidContact)return NextResponse.json({error:invalidContact},{status:400});
