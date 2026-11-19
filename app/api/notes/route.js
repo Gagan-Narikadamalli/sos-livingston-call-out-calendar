@@ -243,9 +243,7 @@ async function handlePATCH(req){
     });
     const afterRows=await sql`select * from calendar_notes where id=${noteId}`;
     await writeAudit(sql,{action:'edit',entityType:'calendar_note',entityId:noteId,summary:`Edited recurring calendar note: ${title}`,details:{before:current,after:afterRows[0]||null}});
-    const afterRows=await sql`select * from calendar_notes where id=${noteId}`;
-  await writeAudit(sql,{action:'edit',entityType:'calendar_note',entityId:noteId,summary:`Edited calendar note: ${title}`,details:{before:current,after:afterRows[0]||null}});
-  return NextResponse.json({ok:true,updated:updated.length});
+    return NextResponse.json({ok:true,updated:updated.length});
   }
 
   const updated=await sql`
@@ -255,6 +253,8 @@ async function handlePATCH(req){
     where id=${noteId}
     returning id
   `;
+  const afterRows=await sql`select * from calendar_notes where id=${noteId}`;
+  await writeAudit(sql,{action:'edit',entityType:'calendar_note',entityId:noteId,summary:`Edited calendar note: ${title}`,details:{before:current,after:afterRows[0]||null}});
   return NextResponse.json({ok:true,updated:updated.length});
 }
 
