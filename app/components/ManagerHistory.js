@@ -10,6 +10,10 @@ function lines(details){
  if(Array.isArray(details.changes))return details.changes;
  if(details.changedFields?.length)return details.changedFields.map(key=>`${fieldNames[key]||key}: ${showValue(details.before?.[key])} → ${showValue(details.after?.[key])}`);
  if(details.before&&details.after){const keys=Object.keys(fieldNames).filter(key=>JSON.stringify(details.before[key]??null)!==JSON.stringify(details.after[key]??null));return keys.map(key=>`${fieldNames[key]}: ${showValue(details.before[key])} → ${showValue(details.after[key])}`)}
+
+ const snapshot=details.after||details.before;
+ if(snapshot&&typeof snapshot==='object')return Object.keys(fieldNames).filter(key=>snapshot[key]!==undefined&&snapshot[key]!==null&&snapshot[key]!=='').map(key=>`${fieldNames[key]}: ${showValue(snapshot[key])}`);
+ if(Array.isArray(details.records))return details.records.slice(0,20).map(record=>record.name||'Schedule entry').concat(details.records.length>20?[`and ${details.records.length-20} more`]:[]);
  const result=[];
  if(details.dates?.length)result.push(`Dates: ${details.dates.join(', ')}`);
  if(details.event_date)result.push(`Date: ${details.event_date}`);
