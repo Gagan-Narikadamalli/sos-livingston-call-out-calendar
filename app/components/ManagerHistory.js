@@ -36,13 +36,15 @@ export default function ManagerHistory(){
   <section className="schedule-hero"><div><span className="schedule-eyebrow">MANAGER WORKSPACE</span><h1>Calendar History</h1><p>A record of calendar changes from the time History was enabled, including additions, edits, deletions and hold status changes.</p></div><span className="schedule-mode manager-mode">AUDIT LOG</span></section>
   <div className="history-toolbar"><div><h2>Activity history</h2><p>{events.length} recorded action{events.length===1?'':'s'} · newest first</p></div><div className="history-toolbar-actions"><select aria-label="Filter history" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All activity</option><option value="schedule">Staff & client schedules</option><option value="calendar">Calendar entries & notes</option></select><button type="button" onClick={load} disabled={loading}>Refresh</button></div></div>
   {error&&<p className="message error-message">{error}</p>}
-  {loading?<section className="history-empty">Loading calendar history…</section>:!visible.length?<section className="history-empty"><strong>No history yet</strong><span>New calendar actions will appear here automatically.</span></section>:<div className="history-list">{visible.map(item=><article className="history-item" key={item.id}>
-   <div className={`history-action-icon history-action-${item.action}`}>{item.action==='add'?'＋':item.action==='edit'?'✎':item.action==='delete'?'−':item.action==='hold'?'Ⅱ':item.action==='resume'?'▶':'↶'}</div>
-   <div className="history-item-content"><div className="history-item-heading"><span className="history-action-label">{labels[item.action]||item.action}</span><time>{fmt(item.created_at)}</time></div><h3>{item.summary}</h3>
-   {lines(item.details).length>0&&<ul>{lines(item.details).map((line,index)=><li key={index}>{line}</li>)}</ul>}
-   {item.details?.count>1&&<p className="history-meta">{item.details.count} records affected</p>}
-   {item.undo_available&&<button type="button" className="history-undo-button" disabled={busyId!==null} onClick={()=>undo(item.id)}>{busyId===item.id?'Restoring…':'Undo deletion'}</button>}
-   {item.action==='delete'&&item.entity_type==='schedule'&&!item.undo_available&&<span className="history-meta">Undo is no longer available for this deletion.</span>}
-   </div></article>)}</div>}
+  {loading?<section className="history-empty">Loading calendar history…</section>:!visible.length?<section className="history-empty"><strong>No history yet</strong><span>New calendar actions will appear here automatically.</span></section>:<div className="history-table-wrap"><div className="history-table" role="table" aria-label="Calendar activity history">
+   <div className="history-table-header" role="row"><span role="columnheader">Action</span><span role="columnheader">Description</span><span role="columnheader">Changes / details</span><span role="columnheader">Date &amp; time</span><span role="columnheader">Undo</span></div>
+   {visible.map(item=>{const detailLines=lines(item.details);return <article className="history-item" role="row" key={item.id}>
+    <div className="history-action-cell" role="cell"><span className={`history-action-icon history-action-${item.action}`}>{item.action==='add'?'＋':item.action==='edit'?'✎':item.action==='delete'?'−':item.action==='hold'?'Ⅱ':item.action==='resume'?'▶':'↶'}</span><span className="history-action-label">{labels[item.action]||item.action}</span></div>
+    <div className="history-description-cell" role="cell" title={item.summary}><strong>{item.summary}</strong>{item.details?.count>1&&<small>{item.details.count} records affected</small>}</div>
+    <div className="history-details-cell" role="cell" title={detailLines.join(' · ')}>{detailLines.length?detailLines.join(' · '):<span className="history-no-details">—</span>}</div>
+    <time className="history-time-cell" role="cell">{fmt(item.created_at)}</time>
+    <div className="history-undo-cell" role="cell">{item.undo_available?<button type="button" className="history-undo-button" disabled={busyId!==null} onClick={()=>undo(item.id)}>{busyId===item.id?'Restoring…':'Undo'}</button>:item.action==='delete'&&item.entity_type==='schedule'?<span className="history-meta">Expired</span>:<span className="history-no-details">—</span>}</div>
+   </article>})}
+  </div></div>}
  </main>;
 }
