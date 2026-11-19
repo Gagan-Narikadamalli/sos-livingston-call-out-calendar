@@ -252,7 +252,7 @@ async function handleDELETE(req){
     if(predicate==='all')deleted=await transaction`delete from weekly_schedules where schedule_kind=${kind} returning id`;
     else if(predicate==='section')deleted=await transaction`delete from weekly_schedules where schedule_kind=${kind} and category=${values.category} returning id`;
     else deleted=await transaction`delete from weekly_schedules where id=${values.id} and schedule_kind=${kind} returning id`;
-    if(snapshots.length)await writeAudit(transaction,{action:'delete',entityType:'schedule',entityId:values?.id??null,summary:predicate==='single'?`Deleted ${kind==='employee'?'staff member':'client'}: ${snapshots[0].first_name} ${snapshots[0].last_name||''}`.trim():`Deleted ${snapshots.length} ${kind==='employee'?'staff schedule':'client schedule'} entr${snapshots.length===1?'y':'ies'}`,details:{kind,scope:predicate,count:snapshots.length,category:values?.category||null},undoData:snapshots});
+    if(snapshots.length)await writeAudit(transaction,{action:'delete',entityType:'schedule',entityId:values?.id??null,summary:predicate==='single'?`Deleted ${kind==='employee'?'staff member':'client'}: ${snapshots[0].first_name} ${snapshots[0].last_name||''}`.trim():`Deleted ${snapshots.length} ${kind==='employee'?'staff schedule':'client schedule'} entr${snapshots.length===1?'y':'ies'}`,details:{kind,scope:predicate,count:snapshots.length,category:values?.category||null,before:predicate==='single'?snapshots[0]:null,records:predicate==='single'?undefined:snapshots.map(row=>({name:[row.first_name,row.last_name].filter(Boolean).join(' '),category:row.category}))},undoData:snapshots});
     return deleted.length;
   });
   return NextResponse.json({deleted:result});
