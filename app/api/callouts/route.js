@@ -1,6 +1,7 @@
 import {withApiErrors} from '../../../lib/api';
 import {NextResponse} from 'next/server';
 import {db} from '../../../lib/db';
+import {writeAudit} from '../../../lib/audit-log';
 import {validatePublicSubmission} from '../../../lib/validate';
 import {findHolidayDates,holidayConflictMessage} from '../../../lib/holidays';
 
@@ -26,6 +27,7 @@ async function handlePOST(req){
     }
   });
 
+  await writeAudit(sql,{action:'add',entityType:'call_out',entityId:groupId,summary:`Added ${value.dates.length===1?'calendar call-out':'calendar call-outs'}: ${value.name} — ${value.request_type}`,details:{name:value.name,submitter_type:value.submitter_type,request_type:value.request_type,dates:value.dates,createdCount:value.dates.length}});
   return NextResponse.json({ok:true,created:value.dates.length});
 }
 
