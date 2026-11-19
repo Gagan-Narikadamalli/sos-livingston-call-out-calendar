@@ -2,6 +2,7 @@ import {withApiErrors} from '../../../lib/api';
 import {NextResponse} from 'next/server';
 import {authorized} from '../../../lib/auth';
 import {db} from '../../../lib/db';
+import {writeAudit} from '../../../lib/audit-log';
 import {validDate,validMonth} from '../../../lib/validate';
 
 const no=()=>NextResponse.json({error:'Unauthorized'},{status:401});
@@ -52,6 +53,9 @@ async function handlePUT(req){
   }
 
   const sql=await db();
+  const previous=await sql`select event_date::text from calendar_holidays where event_date>=${month+'-01'}::date and event_date<(${month+'-01'}::date+interval '1 month') order by event_date`;
+  const previousDates=previous.map(row=>row.event_date);
+  const changed=JSON.stringify(previousDates)!==JSON.stringify(dates);
   await sql.begin(async transaction=>{
     await transaction`
       delete from calendar_holidays
@@ -67,6 +71,7 @@ async function handlePUT(req){
     }
   });
 
+  if(changed)await writeAudit(sql,{action:'edit',entityType:'holiday',summary:`Updated calendar holidays for ${month}`,details:{month,before:previousDates,after:dates}});
   return NextResponse.json({ok:true,month,dates});
 }
 
