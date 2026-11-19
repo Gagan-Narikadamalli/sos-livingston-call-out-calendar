@@ -455,3 +455,21 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
  .manager-history-page .history-description-text strong{font-size:10px}
  .manager-history-page .history-description-text>span{font-size:9px}
 }
+
+/* Keep header labels and every activity row on the exact same column tracks. */
+.manager-history-page .history-table-header,
+.manager-history-page .history-table > .history-item{
+ display:grid !important;
+ grid-template-columns:36% 26% minmax(0,1fr) !important;
+ column-gap:0 !important;
+ box-sizing:border-box;
+ width:100%;
+}
+.manager-history-page .history-table-header{padding-left:14px;padding-right:14px}
+.manager-history-page .history-table > .history-item{padding-left:14px;padding-right:14px}
+.manager-history-page .history-table-header>span,
+.manager-history-page .history-table > .history-item>.history-time-cell,
+.manager-history-page .history-table > .history-item>.history-action-cell,
+.manager-history-page .history-table > .history-item>.history-description-cell{min-width:0}
+.manager-history-page .history-table > .history-item>.history-action-cell{padding-left:0}
+.manager-history-page .history-table > .history-item>.history-description-cell{overflow:hidden}
