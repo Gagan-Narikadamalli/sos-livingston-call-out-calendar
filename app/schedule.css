@@ -473,3 +473,114 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .manager-history-page .history-table > .history-item>.history-description-cell{min-width:0}
 .manager-history-page .history-table > .history-item>.history-action-cell{padding-left:0}
 .manager-history-page .history-table > .history-item>.history-description-cell{overflow:hidden}
+
+/* Four compact, fixed history columns: Date | Time | Action | Description. */
+.manager-history-page .history-table-wrap{width:100%;overflow-x:hidden}
+.manager-history-page .history-table{width:100%;min-width:0}
+.manager-history-page .history-table-header,
+.manager-history-page .history-table > .history-item{
+ display:grid !important;
+ grid-template-columns:118px 84px 116px minmax(0,1fr) !important;
+ column-gap:0 !important;
+ align-items:center;
+ box-sizing:border-box;
+ width:100%;
+}
+.manager-history-page .history-table-header{
+ min-height:34px;
+ padding:0 12px !important;
+ text-align:left;
+}
+.manager-history-page .history-table-header>span{
+ display:block;
+ min-width:0;
+ text-align:left;
+ white-space:nowrap;
+}
+.manager-history-page .history-table > .history-item{
+ min-height:40px;
+ padding:4px 12px !important;
+}
+.manager-history-page .history-table > .history-item>.history-date-cell,
+.manager-history-page .history-table > .history-item>.history-time-cell,
+.manager-history-page .history-table > .history-item>.history-action-cell,
+.manager-history-page .history-table > .history-item>.history-description-cell{
+ min-width:0;
+ box-sizing:border-box;
+}
+.manager-history-page .history-date-cell,
+.manager-history-page .history-time-cell{
+ display:block;
+ overflow:hidden;
+ white-space:nowrap;
+ text-overflow:ellipsis;
+ font-size:11px;
+ line-height:1.2;
+}
+.manager-history-page .history-action-cell{
+ display:flex;
+ align-items:center;
+ overflow:hidden;
+}
+.manager-history-page .history-action-label{
+ display:block;
+ max-width:100%;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ white-space:nowrap;
+ font-size:10px;
+ letter-spacing:.035em;
+ line-height:1.2;
+}
+.manager-history-page .history-description-cell{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:7px;
+ overflow:hidden;
+}
+.manager-history-page .history-description-text{
+ display:flex;
+ align-items:center;
+ gap:7px;
+ min-width:0;
+ overflow:hidden;
+ white-space:nowrap;
+}
+.manager-history-page .history-description-text strong{
+ flex:0 1 auto;
+ min-width:0;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ white-space:nowrap;
+ font-size:11px;
+ line-height:1.2;
+}
+.manager-history-page .history-description-text>span{
+ flex:1 1 auto;
+ min-width:0;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ white-space:nowrap;
+ font-size:10px;
+ line-height:1.2;
+}
+.manager-history-page .history-description-text small{
+ flex:0 0 auto;
+ font-size:9px;
+ white-space:nowrap;
+}
+.manager-history-page .history-inline-action{flex:0 0 auto;min-width:0}
+.manager-history-page .history-undo-button{padding:3px 7px;font-size:10px;line-height:1.1}
+@media(max-width:700px){
+ .manager-history-page .history-table-header,
+ .manager-history-page .history-table > .history-item{
+  grid-template-columns:100px 70px 104px minmax(0,1fr) !important;
+ }
+ .manager-history-page .history-date-cell,
+ .manager-history-page .history-time-cell{font-size:9px}
+ .manager-history-page .history-action-label{font-size:9px}
+ .manager-history-page .history-description-text{gap:4px}
+ .manager-history-page .history-description-text strong{font-size:10px}
+ .manager-history-page .history-description-text>span{font-size:9px}
+}
