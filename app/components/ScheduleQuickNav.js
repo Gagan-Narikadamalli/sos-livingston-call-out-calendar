@@ -25,7 +25,7 @@ export default function ScheduleQuickNav(){
    <div className="schedule-nav-heading"><div><span>QUICK NAVIGATION</span><h2 id="schedule-nav-title">Schedules</h2></div><button type="button" autoFocus aria-label="Close schedules navigation" onClick={close}>×</button></div>
    <p className="schedule-nav-description">Choose a calendar or schedule view.</p>
    <nav className="schedule-nav-links" aria-label="Calendar views">
-    <a className={!pathname.includes('/schedules')?'active':''} href={base} onClick={close}><span>Livingston Calendar</span><span aria-hidden="true">→</span></a>
+    <a className={!pathname.includes('/schedules')&&!pathname.startsWith('/manager/history')?'active':''} href={base} onClick={close}><span>Livingston Calendar</span><span aria-hidden="true">→</span></a>
     <a href={`${base}/schedules?view=employee`} onClick={close}><span>Employee Schedule</span><span aria-hidden="true">→</span></a>
     <a href={`${base}/schedules?view=client`} onClick={close}><span>Clients / Kids Schedule</span><span aria-hidden="true">→</span></a>
     {isManager&&<a href={`${base}/schedules?view=summary`} onClick={close}><span>Overall Summary</span><span aria-hidden="true">→</span></a>}
