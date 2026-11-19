@@ -418,7 +418,7 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .manager-history-page .history-table-header{min-height:39px;padding:0 14px;background:#287b59;color:#fff;font-size:12px;font-weight:800;letter-spacing:.02em}
 .manager-history-page .history-item{min-height:54px;padding:6px 14px;border-bottom:1px solid #e2eaf0;color:#17305e;font-size:13px}
 .manager-history-page .history-item:last-child{border-bottom:0}
-.manager-history-page .history-item:nth-child(odd){background:#f7fafc}
+.manager-history-page article.history-item:nth-of-type(odd){background:#f7fafc}
 .manager-history-page .history-item:hover{background:#edf5f9}
 .manager-history-page .history-action-cell{display:flex;align-items:center;gap:8px;min-width:0}
 .manager-history-page .history-action-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 27px;width:27px;height:27px;border-radius:7px;font-size:17px;font-weight:800}
