@@ -5,21 +5,31 @@ const labels={add:'Added',edit:'Edited',delete:'Deleted',hold:'Hold',resume:'Res
 const dateFmt=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'Unknown date':new Intl.DateTimeFormat('en-US',{dateStyle:'medium'}).format(d)};
 const timeFmt=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'Unknown time':new Intl.DateTimeFormat('en-US',{timeStyle:'short'}).format(d)};
 const fieldNames={first_name:'First name',last_name:'Last name',category:'Category',assigned_to:'Assigned to',monday:'Monday',tuesday:'Tuesday',wednesday:'Wednesday',thursday:'Thursday',friday:'Friday',start_date:'Start date',end_date:'End date',notes:'Notes',phone_number:'Phone number',email:'Email',event_date:'Date',title:'Title',note_type:'Note type',note_category:'Note category',details:'Details',name:'Name',request_type:'Request type',submitter_type:'Submitted by',reason:'Reason'};
+function dateValue(value){
+ if(value===null||value===undefined||value==='')return '—';
+ if(typeof value==='string'){
+  const dateOnly=value.match(/^(\\d{4}-\\d{2}-\\d{2})(?:T.*)?$/);
+  if(dateOnly)return dateOnly[1];
+ }
+ const date=new Date(value);
+ return Number.isNaN(date.getTime())?String(value):new Intl.DateTimeFormat('en-CA',{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+}
 function showValue(value){if(value===null||value===undefined||value==='')return '—';if(typeof value==='object')return JSON.stringify(value);return String(value)}
+function showFieldValue(key,value){return ['event_date','start_date','end_date'].includes(key)?dateValue(value):showValue(value)}
 function lines(details){
  if(!details||typeof details!=='object')return[];
  if(Array.isArray(details.changes))return details.changes;
- if(details.changedFields?.length)return details.changedFields.map(key=>`${fieldNames[key]||key}: ${showValue(details.before?.[key])} → ${showValue(details.after?.[key])}`);
+ if(details.changedFields?.length)return details.changedFields.map(key=>`${fieldNames[key]||key}: ${showFieldValue(key,details.before?.[key])} → ${showFieldValue(key,details.after?.[key])}`);
  if(Array.isArray(details.before)&&Array.isArray(details.after))return [`Dates before: ${details.before.join(', ')||'None'}`,`Dates after: ${details.after.join(', ')||'None'}`];
- if(details.before&&details.after){const keys=Object.keys(fieldNames).filter(key=>JSON.stringify(details.before[key]??null)!==JSON.stringify(details.after[key]??null));return keys.map(key=>`${fieldNames[key]}: ${showValue(details.before[key])} → ${showValue(details.after[key])}`)}
+ if(details.before&&details.after){const keys=Object.keys(fieldNames).filter(key=>JSON.stringify(details.before[key]??null)!==JSON.stringify(details.after[key]??null));return keys.map(key=>`${fieldNames[key]}: ${showFieldValue(key,details.before[key])} → ${showFieldValue(key,details.after[key])}`)}
 
  const snapshot=details.after||details.before;
- if(snapshot&&typeof snapshot==='object')return Object.keys(fieldNames).filter(key=>snapshot[key]!==undefined&&snapshot[key]!==null&&snapshot[key]!=='').map(key=>`${fieldNames[key]}: ${showValue(snapshot[key])}`);
+ if(snapshot&&typeof snapshot==='object')return Object.keys(fieldNames).filter(key=>snapshot[key]!==undefined&&snapshot[key]!==null&&snapshot[key]!=='').map(key=>`${fieldNames[key]}: ${showFieldValue(key,snapshot[key])}`);
  if(Array.isArray(details.records))return details.records.slice(0,20).map(record=>record.name||'Schedule entry').concat(details.records.length>20?[`and ${details.records.length-20} more`]:[]);
  const result=[];
- if(details.dates?.length)result.push(`Dates: ${details.dates.join(', ')}`);
- if(details.event_date)result.push(`Date: ${details.event_date}`);
- if(details.start&&details.end)result.push(`Date range: ${details.start} – ${details.end}`);
+ if(details.dates?.length)result.push(`Dates: ${details.dates.map(dateValue).join(', ')}`);
+ if(details.event_date)result.push(`Date: ${dateValue(details.event_date)}`);
+ if(details.start&&details.end)result.push(`Date range: ${dateValue(details.start)} – ${dateValue(details.end)}`);
  if(details.request_type)result.push(`Type: ${details.request_type}`);
  if(details.note_type)result.push(`Type: ${details.note_type}`);
  if(details.note_category)result.push(`Category: ${details.note_category}`);
