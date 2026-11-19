@@ -9,6 +9,7 @@ function lines(details){
  if(!details||typeof details!=='object')return[];
  if(Array.isArray(details.changes))return details.changes;
  if(details.changedFields?.length)return details.changedFields.map(key=>`${fieldNames[key]||key}: ${showValue(details.before?.[key])} → ${showValue(details.after?.[key])}`);
+ if(Array.isArray(details.before)&&Array.isArray(details.after))return [`Dates before: ${details.before.join(', ')||'None'}`,`Dates after: ${details.after.join(', ')||'None'}`];
  if(details.before&&details.after){const keys=Object.keys(fieldNames).filter(key=>JSON.stringify(details.before[key]??null)!==JSON.stringify(details.after[key]??null));return keys.map(key=>`${fieldNames[key]}: ${showValue(details.before[key])} → ${showValue(details.after[key])}`)}
 
  const snapshot=details.after||details.before;
