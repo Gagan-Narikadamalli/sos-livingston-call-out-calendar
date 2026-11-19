@@ -2,6 +2,7 @@ import {withApiErrors} from '../../../lib/api';
 import {NextResponse} from 'next/server';
 import {authorized} from '../../../lib/auth';
 import {db} from '../../../lib/db';
+import {writeAudit} from '../../../lib/audit-log';
 import {findHolidayDates,holidayConflictMessage} from '../../../lib/holidays';
 import {ensureRecurrenceExceptions,stopOngoingRecurrenceIfCurrentMonthEmpty} from '../../../lib/note-recurrence';
 import {validateEntry,validDate,validMonth} from '../../../lib/validate';
@@ -46,11 +47,7 @@ async function handlePATCH(req){
   if(typeof v==='string')return NextResponse.json({error:v},{status:400});
 
   const sql=await db();
-  const existing=await sql`
-    select event_date::text
-    from call_outs
-    where id=${b.id}
-  `;
+  const existing=await sql`select * from call_outs where id=${b.id}`;
   if(!existing.length)return NextResponse.json({error:'Record not found'},{status:404});
 
   if(existing[0].event_date!==v.event_date){
@@ -67,9 +64,10 @@ async function handlePATCH(req){
     where id=${b.id}
     returning id
   `;
-  return rows.length
-    ?NextResponse.json({ok:true})
-    :NextResponse.json({error:'Record not found'},{status:404});
+  if(!rows.length)return NextResponse.json({error:'Record not found'},{status:404});
+  const after=await sql`select * from call_outs where id=${b.id}`;
+  await writeAudit(sql,{action:'edit',entityType:'call_out',entityId:b.id,summary:`Edited calendar call-out: ${v.name} — ${v.request_type}`,details:{before:existing[0],after:after[0]||null}});
+  return NextResponse.json({ok:true});
 }
 
 async function handleDELETE(req){
@@ -81,7 +79,9 @@ async function handleDELETE(req){
   if(rawId){
     const id=Number(rawId);
     if(!Number.isInteger(id)||id<1)return NextResponse.json({error:'Invalid record.'},{status:400});
+    const before=await sql`select * from call_outs where id=${id}`;
     const rows=await sql`delete from call_outs where id=${id} returning id`;
+    if(rows.length)await writeAudit(sql,{action:'delete',entityType:'call_out',entityId:id,summary:`Deleted calendar call-out: ${before[0]?.name||'Unknown'}`,details:{before:before[0]||null}});
     return NextResponse.json({deleted:rows.length});
   }
 
@@ -130,16 +130,12 @@ async function handleDELETE(req){
       on conflict(recurrence_id,event_date) do nothing
     `;
 
-    const callOuts=await transaction`
-      delete from call_outs
-      where event_date>=${start} and event_date<=${end}
-      returning id
-    `;
-    const notes=await transaction`
-      delete from calendar_notes
-      where event_date>=${start} and event_date<=${end}
-      returning id
-    `;
+    const callOutSnapshots=await transaction`delete from call_outs where event_date>=${start} and event_date<=${end} returning *`;
+    const noteSnapshots=await transaction`delete from calendar_notes where event_date>=${start} and event_date<=${end} returning *`;
+    if(callOutSnapshots.length)await writeAudit(transaction,{action:'delete',entityType:'call_out',summary:`Bulk deleted ${callOutSnapshots.length} calendar call-outs`,details:{count:callOutSnapshots.length,start,end}});
+    if(noteSnapshots.length)await writeAudit(transaction,{action:'delete',entityType:'calendar_note',summary:`Bulk deleted ${noteSnapshots.length} calendar notes`,details:{count:noteSnapshots.length,start,end}});
+    const callOuts=callOutSnapshots.map(row=>({id:row.id}));
+    const notes=noteSnapshots.map(row=>({id:row.id}));
 
     return {
       callOuts:callOuts.length,
