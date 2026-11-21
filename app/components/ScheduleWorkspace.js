@@ -54,6 +54,14 @@ function blankRow(category){
   };
 }
 
+function scheduleDateKey(date){
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+function isScheduleActiveOnDate(row,dateKey){
+  const start=String(row.start_date||'').slice(0,10);
+  const end=String(row.end_date||'').slice(0,10);
+  return (!start||start<=dateKey)&&(!end||end>=dateKey);
+}
 function displayScheduleDate(value){
   const date=String(value||'').slice(0,10);
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return '—';
@@ -112,6 +120,7 @@ export default function ScheduleWorkspace({manager=false,location}){
 
   const sections=kind==='employee'?employeeSections:clientSections;
   const totalVisible=useMemo(()=>rows.filter(row=>matchesSearch(row,search)).length,[rows,search]);
+  const todayScheduleDateKey=scheduleDateKey(new Date(clock));
 
   async function login(event){
     event.preventDefault();
@@ -262,7 +271,7 @@ export default function ScheduleWorkspace({manager=false,location}){
       <div className="schedule-topbar">
         <div>
           <h2>{kind==='employee'?'Employee Schedule':'Clients / Kids Schedule'}</h2>
-          <p>{loading?'Refreshing schedule…':`${rows.filter(row=>!row.on_hold).length} active ${kind==='employee'?'staff member(s)':'client/kid(s)'}${rows.some(row=>row.on_hold)?` · ${rows.filter(row=>row.on_hold).length} on hold`:''}`}</p>
+          <p>{loading?'Refreshing schedule…':`${rows.filter(row=>!row.on_hold&&isScheduleActiveOnDate(row,todayScheduleDateKey)).length} active ${kind==='employee'?'staff member(s)':'client/kid(s)'}${rows.some(row=>row.on_hold)?` · ${rows.filter(row=>row.on_hold).length} on hold`:''}`}</p>
         </div>
         <div className="schedule-topbar-actions">
           {manager&&<ScheduleExportButton kind={kind} employees={kind==='employee'?rows:[]} clients={kind==='client'?rows:[]} location={location} disabled={loading||busy}/>}
@@ -282,7 +291,7 @@ export default function ScheduleWorkspace({manager=false,location}){
             key={section.key}
             section={section}
             rows={sectionRows}
-            totalCount={allSectionRows.filter(row=>!row.on_hold).length}
+            totalCount={allSectionRows.filter(row=>!row.on_hold&&isScheduleActiveOnDate(row,todayScheduleDateKey)).length}
             manager={manager}
             kind={kind}
             editRow={row=>setEditing({...row})}
@@ -292,6 +301,7 @@ export default function ScheduleWorkspace({manager=false,location}){
             deleteSection={deleteSection}
             addRow={addRow}
             now={clock}
+            dateKey={todayScheduleDateKey}
           />;
         })}
       </div>
@@ -302,7 +312,7 @@ export default function ScheduleWorkspace({manager=false,location}){
   </PageShell>;
 }
 
-function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,deleteRow,toggleHold,deleteSection,addRow,now}){
+function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,deleteRow,toggleHold,deleteSection,addRow,now,dateKey}){
   const noun=kind==='employee'?'Staff Member':'Client / Kid';
   return <section className={`schedule-section schedule-section-${section.tone} schedule-display-section`}>
     <div className="schedule-section-head">
@@ -331,21 +341,22 @@ function ScheduleSection({section,rows,totalCount,manager,kind,editRow,busy,dele
         </tr></thead>
         <tbody>
           {!rows.length&&<tr><td className="schedule-empty" colSpan={manager?14:11}>{manager?'No entries shown. Use Add to create one.':'No entries in this section.'}</td></tr>}
-          {rows.map((row,index)=><ScheduleRow key={row.id} row={row} serialNumber={index+1} manager={manager} editRow={editRow} busy={busy} deleteRow={deleteRow} toggleHold={toggleHold} now={now}/>)}
+          {rows.map((row,index)=><ScheduleRow key={row.id} row={row} serialNumber={index+1} manager={manager} editRow={editRow} busy={busy} deleteRow={deleteRow} toggleHold={toggleHold} now={now} dateKey={dateKey}/>)}
         </tbody>
       </table>
     </div>
   </section>;
 }
 
-function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow,toggleHold,now}){
+function ScheduleRow({row,serialNumber,manager,editRow,busy,deleteRow,toggleHold,now,dateKey}){
   const colors=normalizeDayColors(row.day_colors);
   const isNew=isNewScheduleRow(row,now);
+  const showHours=isScheduleActiveOnDate(row,dateKey);
   return <tr className={manager&&row.on_hold?'schedule-row-on-hold':''}>
     <td className="schedule-serial-number">{serialNumber}</td>
     <td><span className="schedule-name-wrap"><span className="schedule-person-name">{row.first_name||'—'}</span>{isNew&&<span className="schedule-new-badge" title="Added within the last 10 days">NEW</span>}</span></td>
     <td><span>{row.last_name||'—'}</span></td>
-    {DAY_FIELDS.map((day,index)=>{const time=parseScheduleTime(row[day]);return <td key={day} className={time.valid&&time.minutes===0?'schedule-off-cell':''} title={time.valid&&time.minutes===0?'Not scheduled':undefined}><div className="schedule-display-time" style={{color:colors[day],fontWeight:colors[day]==='#800000'?700:400}}>{time.valid?(normalizedScheduleTime(row[day])?normalizedScheduleTime(row[day]).split('; ').map((range,index)=><span key={index}>{range.replace(/\b0(?=\d:)/g,'').replace(' - ',' – ')}</span>):<span className="schedule-off-label">Not scheduled</span>):<span title={row[day]}>{row[day]}</span>}{!time.valid&&<small className="schedule-time-error">Needs correction</small>}</div></td>;})}
+    {DAY_FIELDS.map((day,index)=>{const time=parseScheduleTime(row[day]);return <td key={day} className={showHours&&time.valid&&time.minutes===0?'schedule-off-cell':''} title={showHours&&time.valid&&time.minutes===0?'Not scheduled':undefined}><div className="schedule-display-time" style={{color:colors[day],fontWeight:colors[day]==='#800000?700:400}}>{!showHours?<span></span>:time.valid?(normalizedScheduleTime(row[day])?normalizedScheduleTime(row[day]).split('; ').map((range,index)=><span key={index}>{range.replace(/\b0(?=\d:)/g,'').replace(' - ',' – ')}</span>):<span className="schedule-off-label">Not scheduled</span>):<span title={row[day]}>{row[day]}</span>}{showHours&&!time.valid&&<small className="schedule-time-error">Needs correction</small>}</div></td>;})}
     <td className="schedule-date-cell">{displayScheduleDate(row.start_date)}</td>
     <td className="schedule-date-cell">{displayScheduleDate(row.end_date)}</td>
     <td className="schedule-notes-cell"><span className="schedule-display-notes" title={row.notes||''}>{row.notes||'—'}</span></td>
