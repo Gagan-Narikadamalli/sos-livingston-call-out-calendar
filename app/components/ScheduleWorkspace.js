@@ -57,10 +57,19 @@ function blankRow(category){
 function scheduleDateKey(date){
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
+function previousWorkingDayKey(startDate){
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate))return startDate;
+  const [year,month,day]=startDate.split('-').map(Number);
+  const previousDate=new Date(Date.UTC(year,month-1,day-1));
+  // If the previous calendar day is a weekend, move back to Friday.
+  while(previousDate.getUTCDay()===0||previousDate.getUTCDay()===6)previousDate.setUTCDate(previousDate.getUTCDate()-1);
+  return `${previousDate.getUTCFullYear()}-${String(previousDate.getUTCMonth()+1).padStart(2,'0')}-${String(previousDate.getUTCDate()).padStart(2,'0')}`;
+}
 function isScheduleActiveOnDate(row,dateKey){
   const start=String(row.start_date||'').slice(0,10);
   const end=String(row.end_date||'').slice(0,10);
-  return (!start||start<=dateKey)&&(!end||end>=dateKey);
+  const visibleStart=start?previousWorkingDayKey(start):'';
+  return (!visibleStart||visibleStart<=dateKey)&&(!end||end>=dateKey);
 }
 function displayScheduleDate(value){
   const date=String(value||'').slice(0,10);
