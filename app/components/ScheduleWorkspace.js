@@ -58,7 +58,7 @@ function scheduleDateKey(date){
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 function previousWorkingDayKey(startDate){
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate))return startDate;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(startDate))return startDate;
   const [year,month,day]=startDate.split('-').map(Number);
   const previousDate=new Date(Date.UTC(year,month-1,day-1));
   // If the previous calendar day is a weekend, move back to Friday.
