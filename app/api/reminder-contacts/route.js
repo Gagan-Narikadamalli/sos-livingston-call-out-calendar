@@ -1,0 +1,52 @@
+import {NextResponse} from 'next/server';
+import {withApiErrors} from '../../../lib/api';
+import {db} from '../../../lib/db';
+import crypto from 'crypto';
+
+const kinds=new Set(['employee','client']);
+function authorizedReminder(req){
+  const expected=process.env.REMINDER_CENTER_READ_TOKEN||'';
+  const supplied=req.headers.get('authorization')||'';
+  const token=supplied.startsWith('Bearer ')?supplied.slice(7):'';
+  if(!expected||!token)return false;
+  const a=Buffer.from(expected),b=Buffer.from(token);
+  return a.length===b.length&&crypto.timingSafeEqual(a,b);
+}
+
+async function handleGET(req){
+  if(!authorizedReminder(req))return NextResponse.json({error:'Unauthorized'},{status:401});
+  const kind=new URL(req.url).searchParams.get('kind')||'employee';
+  if(!kinds.has(kind))return NextResponse.json({error:'Invalid schedule type.'},{status:400});
+  const sql=await db();
+  await sql`create table if not exists weekly_schedules(
+    id bigserial primary key,
+    schedule_kind text not null,
+    category text not null default 'Employee',
+    first_name text not null,
+    last_name text,
+    phone_number text,
+    email text,
+    display_order integer not null default 0,
+    on_hold boolean not null default false
+  )`;
+  await sql`alter table weekly_schedules add column if not exists phone_number text`;
+  await sql`alter table weekly_schedules add column if not exists email text`;
+  await sql`alter table weekly_schedules add column if not exists on_hold boolean not null default false`;
+  const rows=await sql`
+    select id,schedule_kind,category,first_name,last_name,email,phone_number,on_hold
+    from weekly_schedules
+    where schedule_kind=${kind}
+    order by display_order,id
+  `;
+  return NextResponse.json(rows.map(row=>({
+    id:row.id,
+    kind:row.schedule_kind,
+    category:row.category,
+    first_name:row.first_name,
+    last_name:row.last_name,
+    email:row.email||'',
+    phone_number:row.phone_number||'',
+    on_hold:Boolean(row.on_hold)
+  })),{headers:{'Cache-Control':'no-store'}});
+}
+export const GET=withApiErrors(handleGET);
