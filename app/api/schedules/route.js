@@ -68,6 +68,8 @@ async function ensureScheduleTable(sql){
   await sql`alter table weekly_schedules add column if not exists end_date date`;
   await sql`alter table weekly_schedules add column if not exists phone_number text`;
   await sql`alter table weekly_schedules add column if not exists email text`;
+  await sql`alter table weekly_schedules add column if not exists secondary_email text`;
+  await sql`alter table weekly_schedules add column if not exists secondary_contact text`;
   await sql`alter table weekly_schedules add column if not exists finalized_at timestamptz`;
   await sql`alter table weekly_schedules add column if not exists on_hold boolean not null default false`;
   await sql`create index if not exists weekly_schedules_kind_order_idx on weekly_schedules(schedule_kind,display_order,id)`;
@@ -90,6 +92,8 @@ function normalizeRow(body,kind,order=0){
     notes:safe(body.notes,500),
     phone_number:safe(body.phone_number,40),
     email:safe(body.email,254),
+    secondary_contact:safe(body.secondary_contact,40),
+    secondary_email:safe(body.secondary_email,254),
     day_colors:normalizeDayColors(body.day_colors),
     display_order:Number.isInteger(Number(body.display_order))?Number(body.display_order):order,
   };
@@ -103,7 +107,7 @@ async function handleGET(req){
   await ensureScheduleTable(sql);
   const rows=await sql`
     select id,schedule_kind,category,first_name,last_name,assigned_to,
-      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,phone_number,email,day_colors,display_order,created_at,updated_at,finalized_at,on_hold
+      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,phone_number,email,secondary_email,secondary_contact,day_colors,display_order,created_at,updated_at,finalized_at,on_hold
     from weekly_schedules
     where schedule_kind=${kind}
     order by display_order,id
@@ -140,10 +144,10 @@ async function handlePOST(req){
   const created=await sql`
     insert into weekly_schedules(
       schedule_kind,category,first_name,last_name,assigned_to,
-      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,phone_number,email,day_colors,display_order
+      monday,tuesday,wednesday,thursday,friday,start_date,end_date,notes,phone_number,email,secondary_email,secondary_contact,day_colors,display_order
     ) values(
       ${kind},${row.category},${row.first_name},${row.last_name||''},${row.assigned_to||''},
-      ${row.monday||''},${row.tuesday||''},${row.wednesday||''},${row.thursday||''},${row.friday||''},${row.start_date},${row.end_date},${row.notes||''},${row.phone_number||''},${row.email||''},${sql.json(row.day_colors)},${Number(maxRows[0]?.next||0)}
+      ${row.monday||''},${row.tuesday||''},${row.wednesday||''},${row.thursday||''},${row.friday||''},${row.start_date},${row.end_date},${row.notes||''},${row.phone_number||''},${row.email||''},${row.secondary_email||''},${row.secondary_contact||''},${sql.json(row.day_colors)},${Number(maxRows[0]?.next||0)}
     ) returning *
   `;
   const saved=serializeScheduleRow(created[0]);
@@ -212,13 +216,13 @@ async function handlePATCH(req){
     update weekly_schedules set
       category=${row.category},first_name=${row.first_name},last_name=${row.last_name||''},assigned_to=${row.assigned_to||''},
       monday=${row.monday||''},tuesday=${row.tuesday||''},wednesday=${row.wednesday||''},thursday=${row.thursday||''},friday=${row.friday||''},
-      start_date=${row.start_date},end_date=${row.end_date},notes=${row.notes||''},phone_number=${row.phone_number||''},email=${row.email||''},day_colors=coalesce(${body.day_colors===undefined?null:sql.json(row.day_colors)},day_colors),updated_at=now()
+      start_date=${row.start_date},end_date=${row.end_date},notes=${row.notes||''},phone_number=${row.phone_number||''},email=${row.email||''},secondary_email=${row.secondary_email||''},secondary_contact=${row.secondary_contact||''},day_colors=coalesce(${body.day_colors===undefined?null:sql.json(row.day_colors)},day_colors),updated_at=now()
     where id=${id} and schedule_kind=${kind}
     returning *
   `;
   if(!updated.length)return NextResponse.json({error:'Schedule row not found.'},{status:404});
   const saved=serializeScheduleRow(updated[0]);
-  const fields=['category','first_name','last_name','assigned_to','monday','tuesday','wednesday','thursday','friday','start_date','end_date','notes','phone_number','email','day_colors'];
+  const fields=['category','first_name','last_name','assigned_to','monday','tuesday','wednesday','thursday','friday','start_date','end_date','notes','phone_number','email','secondary_email','secondary_contact','day_colors'];
   const changedFields=fields.filter(field=>JSON.stringify(before[field]??null)!==JSON.stringify(saved[field]??null));
   await writeAudit(sql,{action:'edit',entityType:'schedule',entityId:id,summary:`Edited ${kind==='employee'?'staff member':'client'}: ${saved.first_name} ${saved.last_name||''}`.trim(),details:{kind,category:saved.category,changedFields,before,after:saved}});
   return NextResponse.json(saved);
