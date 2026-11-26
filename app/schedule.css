@@ -584,3 +584,8 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
  .manager-history-page .history-description-text strong{font-size:10px}
  .manager-history-page .history-description-text>span{font-size:9px}
 }
+
+/* Manager contact columns: allow horizontal scrolling so Secondary Email is never clipped. */
+.schedule-section .schedule-group-table-wrap{overflow-x:auto!important;overflow-y:visible!important;-webkit-overflow-scrolling:touch}
+.schedule-section .schedule-manager-table{min-width:1910px!important;width:1910px!important}
+.schedule-section .schedule-contact-cell{min-width:145px!important;white-space:nowrap}
