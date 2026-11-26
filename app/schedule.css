@@ -589,3 +589,22 @@ main.schedule-page.grouped-schedule-page{width:100%;max-width:none;margin:0;padd
 .schedule-section .schedule-group-table-wrap{overflow-x:auto!important;overflow-y:visible!important;-webkit-overflow-scrolling:touch}
 .schedule-section .schedule-manager-table{min-width:1910px!important;width:1910px!important}
 .schedule-section .schedule-contact-cell{min-width:145px!important;white-space:nowrap}
+
+/* Explicitly size the two email columns and actions; the fixed table previously omitted column 15. */
+.schedule-sections .schedule-display-section .schedule-manager-table{
+  width:2250px!important;
+  min-width:2250px!important;
+  table-layout:fixed!important;
+}
+.schedule-sections .schedule-display-section .schedule-manager-table th:nth-child(14),
+.schedule-sections .schedule-display-section .schedule-manager-table td:nth-child(14){
+  width:210px!important;min-width:210px!important;
+}
+.schedule-sections .schedule-display-section .schedule-manager-table th:nth-child(15),
+.schedule-sections .schedule-display-section .schedule-manager-table td:nth-child(15){
+  width:210px!important;min-width:210px!important;
+}
+.schedule-sections .schedule-display-section .schedule-manager-table th:nth-child(16),
+.schedule-sections .schedule-display-section .schedule-manager-table td:nth-child(16){
+  width:190px!important;min-width:190px!important;
+}
